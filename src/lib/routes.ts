@@ -24,6 +24,7 @@ export interface PilgrimRoute {
   bestMonths: string;
   startPoint: string;
   heroColor: string;
+  image: string;
   shortDescription: string;
   intro: string;
   body: string;
@@ -42,6 +43,7 @@ export const routes: Record<string, PilgrimRoute> = {
     bestMonths: 'April \u2013 October',
     startPoint: 'Saint-Jean-Pied-de-Port',
     heroColor: '#D4C9B8',
+    image: '/images/routes/camino.jpg',
     shortDescription:
       'The most walked pilgrimage in the world. Cross the Pyrenees, traverse the Meseta, and arrive at the cathedral in Santiago de Compostela.',
     intro:
@@ -112,6 +114,7 @@ export const routes: Record<string, PilgrimRoute> = {
     bestMonths: 'May \u2013 October',
     startPoint: 'Great St Bernard Pass',
     heroColor: '#C8B8A0',
+    image: '/images/routes/francigena.jpg',
     shortDescription:
       'From the Alpine passes to the eternal city. Walk through Tuscany\u2019s rolling hills, medieval towns, and arrive at St Peter\u2019s Basilica in Rome.',
     intro:
@@ -182,6 +185,7 @@ export const routes: Record<string, PilgrimRoute> = {
     bestMonths: 'March \u2013 May, October \u2013 November',
     startPoint: 'Tanabe',
     heroColor: '#A8B8A0',
+    image: '/images/routes/kumano.jpg',
     shortDescription:
       'A sacred trail through Japan\u2019s ancient cedar forests. One of only two pilgrimage routes with UNESCO World Heritage status alongside the Camino.',
     intro:
@@ -253,6 +257,7 @@ export const routes: Record<string, PilgrimRoute> = {
     bestMonths: 'June \u2013 September',
     startPoint: 'Oslo',
     heroColor: '#B0BEC5',
+    image: '/images/routes/norway.jpg',
     shortDescription:
       'From Oslo to Trondheim through Norway\u2019s wild interior. Follow Viking-age paths to the great Nidaros Cathedral \u2014 the northernmost medieval cathedral in the world.',
     intro:

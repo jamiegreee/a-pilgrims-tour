@@ -37,15 +37,20 @@ export default async function RoutePage({
     <main>
       {/* Hero */}
       <section
-        className="px-6 py-28 sm:py-36"
+        className="relative px-6 py-28 sm:py-36 overflow-hidden"
         style={{ backgroundColor: route.heroColor }}
       >
-        <div className="mx-auto max-w-4xl">
-          <p className="text-sm font-medium uppercase tracking-widest text-slate-deep/60">
+        <img
+          src={route.image}
+          alt={route.name}
+          className="absolute inset-0 w-full h-full object-cover opacity-50"
+        />
+        <div className="relative mx-auto max-w-4xl">
+          <p className="text-sm font-medium uppercase tracking-widest text-parchment/80">
             {route.country} · {route.distance}
           </p>
           <h1
-            className="mt-3 text-4xl sm:text-5xl lg:text-6xl text-slate-deep leading-tight"
+            className="mt-3 text-4xl sm:text-5xl lg:text-6xl text-parchment leading-tight"
             style={{ fontFamily: 'var(--font-eb-garamond)' }}
           >
             {route.name}

@@ -90,11 +90,16 @@ export default function LandingPage() {
                   className="group block bg-card rounded-lg overflow-hidden hover:shadow-lg transition-shadow"
                 >
                   <div
-                    className="h-48 sm:h-56 flex items-end p-6"
+                    className="relative h-48 sm:h-56 flex items-end p-6 overflow-hidden"
                     style={{ backgroundColor: color }}
                   >
+                    <img
+                      src={route.image}
+                      alt={route.name}
+                      className="absolute inset-0 w-full h-full object-cover"
+                    />
                     <h3
-                      className="text-2xl text-slate-deep"
+                      className="relative text-2xl text-parchment drop-shadow-lg"
                       style={{ fontFamily: 'var(--font-eb-garamond)' }}
                     >
                       {route.name}

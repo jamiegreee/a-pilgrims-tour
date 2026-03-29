@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import type { FormEvent } from 'react';
 
 const routeOptions = [
@@ -8,13 +9,21 @@ const routeOptions = [
   'Via Francigena',
   'Kumano Kodo',
   "St Olav\u2019s Way",
+  "St Cuthbert\u2019s Way",
+  "The Pilgrims\u2019 Way",
+  "St Michael\u2019s Way",
+  "North Wales Pilgrim\u2019s Way",
+  "St Hilda\u2019s Way",
+  "The Saints\u2019 Way",
   'Not sure yet',
 ];
 
+const tourTypeOptions = ['Self-Guided', 'Group Tour'];
 const groupSizes = ['1', '2', '3\u20134', '5+'];
 const paceOptions = ['Relaxed', 'Moderate', 'Challenging'];
 
-export default function EnquirePage() {
+function EnquireForm() {
+  const searchParams = useSearchParams();
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -24,11 +33,27 @@ export default function EnquirePage() {
     email: '',
     phone: '',
     route: '',
+    tourType: '',
     dates: '',
     groupSize: '1',
     pace: 'Moderate',
     message: '',
   });
+
+  useEffect(() => {
+    const routeParam = searchParams.get('route') ?? '';
+    const typeParam = searchParams.get('type') ?? '';
+    const tourType =
+      typeParam === 'group' ? 'Group Tour' :
+      typeParam === 'self-guided' ? 'Self-Guided' : '';
+    if (routeParam || tourType) {
+      setForm((prev) => ({
+        ...prev,
+        route: routeParam || prev.route,
+        tourType: tourType || prev.tourType,
+      }));
+    }
+  }, [searchParams]);
 
   function updateField(field: string, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -157,30 +182,54 @@ export default function EnquirePage() {
             />
           </div>
 
-          {/* Route Interest */}
-          <div>
-            <label
-              htmlFor="route"
-              className="block text-sm font-medium text-slate-deep mb-1.5"
-            >
-              Route interest <span className="text-ochre">*</span>
-            </label>
-            <select
-              id="route"
-              required
-              value={form.route}
-              onChange={(e) => updateField('route', e.target.value)}
-              className="w-full rounded-md border border-stone/20 bg-white px-4 py-3 text-slate-deep focus:border-forest focus:ring-1 focus:ring-forest outline-none"
-            >
-              <option value="" disabled>
-                Select a route
-              </option>
-              {routeOptions.map((r) => (
-                <option key={r} value={r}>
-                  {r}
+          {/* Route Interest + Tour Type */}
+          <div className="grid gap-6 sm:grid-cols-2">
+            <div>
+              <label
+                htmlFor="route"
+                className="block text-sm font-medium text-slate-deep mb-1.5"
+              >
+                Route interest <span className="text-ochre">*</span>
+              </label>
+              <select
+                id="route"
+                required
+                value={form.route}
+                onChange={(e) => updateField('route', e.target.value)}
+                className="w-full rounded-md border border-stone/20 bg-white px-4 py-3 text-slate-deep focus:border-forest focus:ring-1 focus:ring-forest outline-none"
+              >
+                <option value="" disabled>
+                  Select a route
                 </option>
-              ))}
-            </select>
+                {routeOptions.map((r) => (
+                  <option key={r} value={r}>
+                    {r}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label
+                htmlFor="tourType"
+                className="block text-sm font-medium text-slate-deep mb-1.5"
+              >
+                Tour type
+              </label>
+              <select
+                id="tourType"
+                value={form.tourType}
+                onChange={(e) => updateField('tourType', e.target.value)}
+                className="w-full rounded-md border border-stone/20 bg-white px-4 py-3 text-slate-deep focus:border-forest focus:ring-1 focus:ring-forest outline-none"
+              >
+                <option value="">No preference</option>
+                {tourTypeOptions.map((t) => (
+                  <option key={t} value={t}>
+                    {t}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
           {/* Preferred Dates */}
@@ -278,5 +327,13 @@ export default function EnquirePage() {
         </form>
       </div>
     </main>
+  );
+}
+
+export default function EnquirePage() {
+  return (
+    <Suspense>
+      <EnquireForm />
+    </Suspense>
   );
 }

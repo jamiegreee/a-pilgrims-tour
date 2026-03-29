@@ -33,6 +33,9 @@ export default async function RoutePage({
     notFound();
   }
 
+  const isGroupRoute = !!route.groupInclusions;
+  const selfGuidedItems = route.selfGuidedInclusions ?? route.inclusions.included;
+
   return (
     <main>
       {/* Hero */}
@@ -47,7 +50,7 @@ export default async function RoutePage({
         />
         <div className="relative mx-auto max-w-4xl">
           <p className="text-sm font-medium uppercase tracking-widest text-parchment/80">
-            {route.country} · {route.distance}
+            {route.country} &mdash; {route.distance} &mdash; {route.duration}
           </p>
           <h1
             className="mt-3 text-4xl sm:text-5xl lg:text-6xl text-parchment leading-tight"
@@ -55,6 +58,9 @@ export default async function RoutePage({
           >
             {route.name}
           </h1>
+          <p className="mt-4 text-lg text-parchment/80 max-w-xl leading-relaxed">
+            {route.shortDescription}
+          </p>
         </div>
       </section>
 
@@ -72,8 +78,7 @@ export default async function RoutePage({
           <aside className="lg:mt-0">
             <div className="bg-card rounded-lg p-6">
               <h2
-                className="text-lg text-slate-deep mb-4"
-                style={{ fontFamily: 'var(--font-eb-garamond)' }}
+                className="text-xs font-medium uppercase tracking-widest text-stone mb-4"
               >
                 At a Glance
               </h2>
@@ -84,16 +89,35 @@ export default async function RoutePage({
                   ['Difficulty', route.difficulty],
                   ['Best months', route.bestMonths],
                   ['Start point', route.startPoint],
+                  ...(route.endPoint ? [['End point', route.endPoint]] : []),
                 ].map(([label, value]) => (
                   <div
                     key={label}
                     className="flex justify-between border-b border-stone/10 pb-3"
                   >
                     <dt className="text-stone">{label}</dt>
-                    <dd className="text-slate-deep font-medium">{value}</dd>
+                    <dd className="text-slate-deep font-medium text-right">{value}</dd>
                   </div>
                 ))}
               </dl>
+
+              {isGroupRoute && (
+                <div className="mt-5 pt-4 border-t border-stone/10">
+                  <h3 className="text-xs font-medium uppercase tracking-widest text-stone mb-3">
+                    Tour Type
+                  </h3>
+                  <ul className="space-y-1.5 text-sm text-slate-deep">
+                    <li className="flex items-center gap-2">
+                      <span className="block h-1.5 w-1.5 shrink-0 rounded-full bg-forest" />
+                      Self-Guided
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <span className="block h-1.5 w-1.5 shrink-0 rounded-full bg-ochre" />
+                      Group Departures
+                    </li>
+                  </ul>
+                </div>
+              )}
             </div>
           </aside>
         </div>
@@ -160,38 +184,93 @@ export default async function RoutePage({
             </h2>
           </div>
 
-          <div className="grid gap-12 sm:grid-cols-2">
-            <div>
-              <h3 className="text-sm font-medium uppercase tracking-widest text-ochre mb-6">
-                Included
-              </h3>
-              <ul className="space-y-3">
-                {route.inclusions.included.map((item) => (
-                  <li key={item} className="flex items-start gap-3">
-                    <span className="mt-1.5 block h-1.5 w-1.5 shrink-0 rounded-full bg-forest" />
-                    <span className="text-parchment/90 leading-relaxed">
-                      {item}
+          {isGroupRoute ? (
+            <div className="grid gap-8 sm:grid-cols-2">
+              {/* Self-Guided card */}
+              <div className="bg-white/5 rounded-lg p-6">
+                <span className="inline-block bg-forest/50 text-parchment text-xs font-medium uppercase tracking-wider px-3 py-1 rounded-full mb-4">
+                  Self-Guided
+                </span>
+                {route.selfGuidedDesc && (
+                  <p className="text-parchment/70 text-sm mb-5 leading-relaxed">
+                    {route.selfGuidedDesc}
+                  </p>
+                )}
+                <ul className="space-y-3">
+                  {selfGuidedItems.map((item) => (
+                    <li key={item} className="flex items-start gap-3">
+                      <span className="mt-1.5 block h-1.5 w-1.5 shrink-0 rounded-full bg-forest" />
+                      <span className="text-parchment/90 leading-relaxed text-sm">
+                        {item}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Group Tour card */}
+              <div className="bg-white/5 rounded-lg p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <span className="inline-block bg-ochre/40 text-parchment text-xs font-medium uppercase tracking-wider px-3 py-1 rounded-full">
+                    Group Tour
+                  </span>
+                  {route.groupMaxWalkers && (
+                    <span className="text-parchment/50 text-xs">
+                      Max {route.groupMaxWalkers} walkers
                     </span>
-                  </li>
-                ))}
-              </ul>
+                  )}
+                </div>
+                {route.groupDesc && (
+                  <p className="text-parchment/70 text-sm mb-5 leading-relaxed">
+                    {route.groupDesc}
+                  </p>
+                )}
+                <ul className="space-y-3">
+                  {route.groupInclusions!.map((item) => (
+                    <li key={item} className="flex items-start gap-3">
+                      <span className="mt-1.5 block h-1.5 w-1.5 shrink-0 rounded-full bg-ochre/70" />
+                      <span className="text-parchment/90 leading-relaxed text-sm">
+                        {item}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </div>
-            <div>
-              <h3 className="text-sm font-medium uppercase tracking-widest text-ochre mb-6">
-                Not Included
-              </h3>
-              <ul className="space-y-3">
-                {route.inclusions.notIncluded.map((item) => (
-                  <li key={item} className="flex items-start gap-3">
-                    <span className="mt-1.5 block h-1.5 w-1.5 shrink-0 rounded-full bg-stone/40" />
-                    <span className="text-parchment/60 leading-relaxed">
-                      {item}
-                    </span>
-                  </li>
-                ))}
-              </ul>
+          ) : (
+            <div className="grid gap-12 sm:grid-cols-2">
+              <div>
+                <h3 className="text-sm font-medium uppercase tracking-widest text-ochre mb-6">
+                  Included
+                </h3>
+                <ul className="space-y-3">
+                  {route.inclusions.included.map((item) => (
+                    <li key={item} className="flex items-start gap-3">
+                      <span className="mt-1.5 block h-1.5 w-1.5 shrink-0 rounded-full bg-forest" />
+                      <span className="text-parchment/90 leading-relaxed">
+                        {item}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div>
+                <h3 className="text-sm font-medium uppercase tracking-widest text-ochre mb-6">
+                  Not Included
+                </h3>
+                <ul className="space-y-3">
+                  {route.inclusions.notIncluded.map((item) => (
+                    <li key={item} className="flex items-start gap-3">
+                      <span className="mt-1.5 block h-1.5 w-1.5 shrink-0 rounded-full bg-stone/40" />
+                      <span className="text-parchment/60 leading-relaxed">
+                        {item}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </section>
 
@@ -205,15 +284,32 @@ export default async function RoutePage({
             {route.cta.heading}
           </h2>
           <p className="mt-4 text-white/80 text-lg">
-            Tell us your dates, your pace, and any special requirements. We will
-            build a personalised itinerary just for you.
+            {route.cta.body ??
+              'Tell us your dates, your pace, and any special requirements. We will build a personalised itinerary just for you.'}
           </p>
-          <Link
-            href="/enquire"
-            className="mt-8 inline-block bg-white text-forest px-8 py-3.5 rounded-md text-base font-medium hover:bg-parchment transition-colors"
-          >
-            {route.cta.button}
-          </Link>
+          {isGroupRoute ? (
+            <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
+              <Link
+                href={`/enquire?route=${encodeURIComponent(route.name)}&type=self-guided`}
+                className="inline-block border-2 border-white text-white px-8 py-3.5 rounded-md text-base font-medium hover:bg-white/10 transition-colors"
+              >
+                Enquire &mdash; Self-Guided
+              </Link>
+              <Link
+                href={`/enquire?route=${encodeURIComponent(route.name)}&type=group`}
+                className="inline-block bg-white text-forest px-8 py-3.5 rounded-md text-base font-medium hover:bg-parchment transition-colors"
+              >
+                Enquire &mdash; Group Tour
+              </Link>
+            </div>
+          ) : (
+            <Link
+              href="/enquire"
+              className="mt-8 inline-block bg-white text-forest px-8 py-3.5 rounded-md text-base font-medium hover:bg-parchment transition-colors"
+            >
+              {route.cta.button}
+            </Link>
+          )}
         </div>
       </section>
     </main>

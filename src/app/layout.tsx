@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { EB_Garamond, Inter } from "next/font/google";
+import Script from "next/script";
 import { Nav } from "@/components/nav";
 import { Footer } from "@/components/footer";
 import "./globals.css";
@@ -33,6 +34,18 @@ export default function RootLayout({
       className={`${ebGaramond.variable} ${inter.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col bg-parchment font-body text-stone">
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-5ZMPEPPC4Y"
+          strategy="afterInteractive"
+        />
+        <Script id="gtag-init" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-5ZMPEPPC4Y');
+          `}
+        </Script>
         <Nav />
         <main className="flex-1">{children}</main>
         <Footer />

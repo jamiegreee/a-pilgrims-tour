@@ -1,7 +1,8 @@
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import type { Metadata } from 'next';
 import { routes } from '@/lib/routes';
-import { flythroughs, flythroughSlugs } from '@/lib/flythroughs';
+import { flythroughs, flythroughSlugs, staysFor } from '@/lib/flythroughs';
+import { getSession } from '@/lib/session';
 import FlythroughScene from '@/components/flythrough/flythrough-loader';
 
 export const dynamicParams = false;
@@ -37,11 +38,15 @@ export default async function FlythroughPage({
     notFound();
   }
 
+  // Flythroughs come with the free plan, so a sign-up is all it takes.
+  const session = await getSession();
+  if (!session) redirect(`/signup?next=${encodeURIComponent(`/routes/${slug}/flythrough`)}`);
+
   return (
     <FlythroughScene
       slug={slug}
       routeName={route.name}
-      flythrough={flythrough}
+      flythrough={{ ...flythrough, stays: staysFor(flythrough, session.plan) }}
       stages={route.stages}
       ctaLabel={route.cta.button}
     />

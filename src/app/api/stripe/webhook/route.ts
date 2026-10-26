@@ -1,8 +1,7 @@
 import type Stripe from 'stripe'
 import { getStripe } from '@/lib/stripe'
 import { getResend } from '@/lib/resend'
-
-const FROM_EMAIL = 'A Pilgrim\'s Tour <noreply@apilgrimstour.com>'
+import { FROM_EMAIL, escapeHtml, notifyOwner } from '@/lib/email'
 
 export async function POST(request: Request) {
   const body = await request.text()
@@ -48,6 +47,14 @@ export async function POST(request: Request) {
     const name = session.customer_details?.name ?? 'Pilgrim'
     const routeName = session.metadata?.routeName ?? 'your pilgrimage'
 
+    await notifyOwner(`New purchase: ${routeName} — ${name}`, [
+      ['Name', name],
+      ['Email', email],
+      ['Route', routeName],
+      ['Amount', session.amount_total != null ? `${(session.amount_total / 100).toFixed(2)} ${session.currency?.toUpperCase() ?? ''}` : null],
+      ['Stripe session', session.id],
+    ])
+
     if (email) {
       try {
         const resend = getResend()
@@ -70,12 +77,4 @@ export async function POST(request: Request) {
   }
 
   return new Response('OK', { status: 200 })
-}
-
-function escapeHtml(str: string): string {
-  return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
 }

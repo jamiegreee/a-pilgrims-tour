@@ -512,6 +512,30 @@ export default function FlythroughMap({
           return { el, i, major: wp.stageEnd !== undefined || i === 0, shown: -1 };
         });
 
+      // Overnight stays: pins by the route, shown nearby while following and all at once from above.
+      const stayAnchors = (flythrough.stays ?? []).map((stay) => {
+        const wrapper = document.createElement('div');
+        const el = document.createElement('div');
+        el.className =
+          'pointer-events-none whitespace-nowrap rounded-md bg-forest/95 px-2.5 py-1 text-[11px] font-medium leading-tight text-white shadow-sm transition-opacity duration-500';
+        const title = document.createElement('div');
+        title.textContent = `Night ${stay.night} \u00b7 ${stay.name}`;
+        el.appendChild(title);
+        if (stay.town) {
+          const town = document.createElement('div');
+          town.className = 'text-[10px] font-normal text-white/80';
+          town.textContent = stay.town;
+          el.appendChild(town);
+        }
+        el.style.opacity = '0';
+        wrapper.appendChild(el);
+        const marker = new maplibregl.Marker({ element: wrapper, anchor: 'bottom', offset: [0, -6] })
+          .setLngLat([stay.lon, stay.lat])
+          .addTo(m);
+        markers.push(marker);
+        return { el, lng: stay.lon, lat: stay.lat, shown: -1 };
+      });
+
       await new Promise<void>((resolve) => m.once('load', () => resolve()));
       if (disposed) return;
       m.addLayer(layer);
@@ -725,6 +749,15 @@ export default function FlythroughMap({
         for (const a of labelAnchors) {
           const metres = Math.abs(wpDist[a.i] - d);
           const show = blend > 0.5 ? (a.major ? 1 : 0) : metres < 9000 || (arriving && a.i === waypoints.length - 1) ? 1 : 0;
+          if (show !== a.shown) {
+            a.shown = show;
+            a.el.style.opacity = String(show);
+          }
+        }
+
+        for (const a of stayAnchors) {
+          const metres = Math.hypot((a.lng - wLng) * 111320 * Math.cos(toRad(wLat)), (a.lat - wLat) * 110574);
+          const show = blend > 0.5 || metres < 6000 ? 1 : 0;
           if (show !== a.shown) {
             a.shown = show;
             a.el.style.opacity = String(show);

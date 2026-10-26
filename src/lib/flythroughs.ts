@@ -1,3 +1,5 @@
+import type { PlanId } from '@/lib/plans';
+
 export interface FlythroughWaypoint {
   name: string;
   lat: number;
@@ -12,6 +14,23 @@ export interface FlythroughWaypoint {
   pause?: boolean;
   /** A landmark rather than a town: labelled in the accent colour. */
   poi?: boolean;
+}
+
+/**
+ * An overnight stay we book for pilgrims, shown in the flythrough as a pin by the route.
+ * Only plans listed in `plans` see it (the free plan sees none), so a route can carry stays
+ * for Walk Light and Guided Pilgrimage without showing them to everyone.
+ */
+export interface FlythroughStay {
+  name: string;
+  lat: number;
+  lon: number;
+  /** Which night of the pilgrimage this is, from 1. */
+  night: number;
+  /** Town or village, shown under the name. */
+  town?: string;
+  url?: string;
+  plans: PlanId[];
 }
 
 /**
@@ -35,6 +54,8 @@ export interface Flythrough {
   /** Radius and height, in metres, of the closing circle over the destination. */
   arrival: { radius: number; height: number };
   waypoints: FlythroughWaypoint[];
+  /** Overnight stays along the route, in walking order. */
+  stays?: FlythroughStay[];
 }
 
 export const flythroughs: Record<string, Flythrough> = {
@@ -126,3 +147,8 @@ export const flythroughs: Record<string, Flythrough> = {
 };
 
 export const flythroughSlugs = Object.keys(flythroughs);
+
+/** The stays a plan may see on a route. */
+export function staysFor(flythrough: Flythrough, plan: PlanId) {
+  return (flythrough.stays ?? []).filter((stay) => stay.plans.includes(plan));
+}

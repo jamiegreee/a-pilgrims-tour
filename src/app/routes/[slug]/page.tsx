@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { routes, routeSlugs, ukRouteSlugs } from '@/lib/routes';
 import { flythroughs } from '@/lib/flythroughs';
+import { plans } from '@/lib/plans';
 import { pilgrimageOptions } from '@/lib/pilgrimage-options';
 import { PilgrimageOptions } from '@/components/pilgrimage-options';
 import type { Metadata } from 'next';
@@ -39,7 +40,7 @@ export default async function RoutePage({ params }: { params: Promise<{ slug: st
               href={`/routes/${slug}/flythrough`}
               className="mt-8 inline-flex items-center gap-2 rounded-md bg-parchment/90 px-5 py-3 text-sm font-medium text-slate-deep transition-colors hover:bg-parchment"
             >
-              Watch the 3D flythrough <span aria-hidden>&rarr;</span>
+              Watch the 3D flythrough free <span aria-hidden>&rarr;</span>
             </Link>
           )}
         </div>
@@ -94,6 +95,25 @@ export default async function RoutePage({ params }: { params: Promise<{ slug: st
               <p className="mt-4 max-w-3xl leading-relaxed text-stone">Ask us about the stages and walking demands for this route. For Walk Light and Guided Pilgrimage, we will confirm your daily itinerary, overnight stops, baggage arrangements and availability in your proposal. Your Independent Pilgrimage route pack provides the itinerary for you to arrange your own stays.</p>
             </div>
           </section>
+          {flythroughs[slug] && (
+            <section className="bg-card px-6 py-14">
+              <div className="mx-auto grid max-w-5xl items-center gap-8 md:grid-cols-[1fr_auto]">
+                <div>
+                  <p className="text-sm font-medium uppercase tracking-widest text-forest">{plans.free.name} plan</p>
+                  <h2 className="mt-2 font-display text-3xl text-slate-deep">{plans.free.tagline}</h2>
+                  <p className="mt-3 max-w-2xl leading-relaxed text-stone">
+                    Sign up free to fly the whole of {route.name} in 3D over real terrain, stage by stage, with its landmarks and pilgrim stops.
+                  </p>
+                </div>
+                <Link
+                  href={`/signup?next=${encodeURIComponent(`/routes/${slug}/flythrough`)}`}
+                  className="rounded-md bg-forest px-6 py-3 text-center text-sm font-medium text-white transition-colors hover:bg-forest/90"
+                >
+                  Sign up free <span aria-hidden="true">&rarr;</span>
+                </Link>
+              </div>
+            </section>
+          )}
           <section id="ways-to-walk" className="bg-slate-deep px-6 py-20 sm:py-24">
             <div className="mx-auto max-w-6xl">
               <p className="text-sm font-medium uppercase tracking-widest text-parchment/70">Choose your arrangements</p>

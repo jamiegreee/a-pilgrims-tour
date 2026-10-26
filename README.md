@@ -35,6 +35,27 @@ The easiest way to deploy your Next.js app is to use the [Vercel Platform](https
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
 
+## Accounts and the free plan
+
+Sign-up is passwordless: `/signup` and `/login` email a one-time link (valid 30 minutes) through
+Resend, and confirming it sets a signed session cookie for 30 days. Everyone who signs up is on
+the free plan (`src/lib/plans.ts`), which unlocks the 3D flythroughs; `/routes/<slug>/flythrough`
+redirects to sign-up otherwise.
+
+There is no database: sessions are stateless, signed with HMAC under `AUTH_SECRET`. The record
+of who signed up is the email sent to `BUSINESS_EMAIL` (default green.jcb@gmail.com) on every new
+sign-up, and on every completed Stripe checkout.
+
+Environment:
+- `AUTH_SECRET`: at least 32 random characters (`openssl rand -hex 32`). Required.
+- `RESEND_API_KEY`: sends the sign-in links and owner notifications. Without it, previews and
+  local development show the sign-in link on screen; production refuses to sign people in.
+- `BUSINESS_EMAIL`: where notifications go.
+
+Hotel stays: add `stays` to a route in `src/lib/flythroughs.ts` (name, position, night, and the
+`plans` allowed to see it). The flythrough shows them as green pins; the server strips any the
+viewer's plan doesn't include.
+
 ## 3D flythroughs
 
 `/routes/<slug>/flythrough` flies along a route over real terrain, built on [MapLibre GL JS](https://maplibre.org) with a three.js layer for the pilgrim and trees. Routes with a flythrough are listed in `src/lib/flythroughs.ts`.

@@ -31,6 +31,10 @@ from rasterio.warp import Resampling, reproject, transform_bounds
 os.environ.setdefault("GDAL_HTTP_TIMEOUT", "60")
 os.environ.setdefault("GDAL_HTTP_MAX_RETRY", "4")
 os.environ.setdefault("GDAL_HTTP_RETRY_DELAY", "2")
+# Abandon downloads that stall rather than hanging a worker.
+os.environ.setdefault("GDAL_HTTP_LOW_SPEED_TIME", "30")
+os.environ.setdefault("GDAL_HTTP_LOW_SPEED_LIMIT", "1000")
+BLOCK_TIMEOUT_S = 900
 
 _spec = importlib.util.spec_from_file_location("bake_imagery", os.path.join(os.path.dirname(__file__), "bake-imagery.py"))
 base = importlib.util.module_from_spec(_spec)
@@ -83,6 +87,15 @@ def bake_block(block):
     items, out_dir, cfg = JOB["items"], JOB["out_dir"], JOB["cfg"]
     # Region blocks supply zooms 8-11; corridor blocks only the sharper zooms near the track.
     keep = (lambda lv, x, y: lv <= 11) if mode == "region" else (lambda lv, x, y: lv >= 12 and JOB["keep"](lv, x, y))
+    wanted = [
+        f"{out_dir}/{lv}/{bx * 2 ** (lv - zb) + tx}/{by * 2 ** (lv - zb) + ty}.webp"
+        for lv in range(zb, zb + 4)
+        for ty in range(2 ** (lv - zb))
+        for tx in range(2 ** (lv - zb))
+        if keep(lv, bx * 2 ** (lv - zb) + tx, by * 2 ** (lv - zb) + ty)
+    ]
+    if all(os.path.exists(w) for w in wanted):
+        return f"  block z{zb}/{bx}/{by}: already baked"
     px = TILE * 8
     b3857 = tile_bounds_3857(zb, bx, by)
     lon0, lat0, lon1, lat1 = transform_bounds("EPSG:3857", "EPSG:4326", *b3857)
@@ -122,7 +135,7 @@ def bake_block(block):
         return arr
 
     # More passes per median over the wide region blocks evens out colour between neighbours.
-    per_grid = 5 if mode == "region" else 3
+    per_grid = 4 if mode == "region" else 3
     stack = [a for scenes in by_grid.values() for s in scenes[:per_grid] if (a := read(s)) is not None]
     with np.errstate(all="ignore"):
         med = np.nanmedian(np.stack(stack), axis=0) if stack else np.full((3, px, px), np.nan, np.float32)
@@ -196,9 +209,15 @@ def main(slug):
     out_dir = f"public/tiles/{slug}"
     # Workers are forked, so they inherit JOB (and the keep closure) without pickling.
     JOB.update(items=items, out_dir=out_dir, cfg=cfg, keep=keep)
-    with multiprocessing.get_context("fork").Pool(4) as pool:
-        for i, line in enumerate(pool.imap_unordered(bake_block, blocks), 1):
-            print(f"[{i}/{len(blocks)}]{line}", flush=True)
+    pool = multiprocessing.get_context("fork").Pool(4)
+    pending = [(b, pool.apply_async(bake_block, (b,))) for b in blocks]
+    for i, (b, res) in enumerate(pending, 1):
+        try:
+            line = res.get(timeout=BLOCK_TIMEOUT_S)
+        except multiprocessing.TimeoutError:
+            line = f"  block z{b[0]}/{b[1]}/{b[2]}: timed out, re-run to retry"
+        print(f"[{i}/{len(blocks)}]{line}", flush=True)
+    pool.terminate()
     total = sum(os.path.getsize(os.path.join(d, f)) for d, _, fs in os.walk(out_dir) for f in fs)
     count = sum(len(fs) for _, _, fs in os.walk(out_dir))
     print(f"Wrote {count} tiles, {total / 1e6:.1f} MB", flush=True)

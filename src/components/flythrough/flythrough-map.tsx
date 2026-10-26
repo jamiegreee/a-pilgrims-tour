@@ -499,9 +499,10 @@ export default function FlythroughMap({
           // MapLibre sets the marker element's own opacity (to dim it behind hills), so fade an inner one.
           const wrapper = document.createElement('div');
           const el = document.createElement('div');
-          el.className =
-            'pointer-events-none whitespace-nowrap rounded-full bg-slate-deep/80 px-2.5 py-1 text-[11px] font-medium tracking-wide text-parchment shadow-sm transition-opacity duration-500';
-          el.textContent = wp.name;
+          el.className = `pointer-events-none whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-medium tracking-wide shadow-sm transition-opacity duration-500 ${
+            wp.poi ? 'bg-ochre/90 text-slate-deep' : 'bg-slate-deep/80 text-parchment'
+          }`;
+          el.textContent = wp.poi ? `\u2726 ${wp.name}` : wp.name;
           el.style.opacity = '0';
           wrapper.appendChild(el);
           const marker = new maplibregl.Marker({ element: wrapper, anchor: 'bottom', offset: [0, -6] })

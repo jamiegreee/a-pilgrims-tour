@@ -10,6 +10,8 @@ export interface FlythroughWaypoint {
   note?: string;
   /** Slow down and circle this landmark briefly while flying past. */
   pause?: boolean;
+  /** A landmark rather than a town: labelled in the accent colour. */
+  poi?: boolean;
 }
 
 /**
@@ -94,25 +96,30 @@ export const flythroughs: Record<string, Flythrough> = {
     arrival: { radius: 450, height: 230 },
     waypoints: [
       { name: 'Winchester Cathedral', lat: 51.0606, lon: -1.313, label: true, note: 'Once home to the shrine of St Swithun. The walk begins at its west door.' },
-      { name: 'New Alresford', lat: 51.0897, lon: -1.1616 },
+      { name: 'New Alresford', lat: 51.0897, lon: -1.1616, label: true, note: 'A Georgian market town, home of the Watercress Line heritage railway.' },
+      { name: 'Jane Austen\u2019s House, Chawton', lat: 51.1334, lon: -0.9878, label: true, poi: true, pause: true, note: 'Jane Austen spent the last eight years of her life here, writing or revising all six of her novels.' },
       { name: 'Alton', lat: 51.1496, lon: -0.9737, label: true },
       { name: 'Farnham', lat: 51.2148, lon: -0.799, label: true, stageEnd: 0, note: 'Farnham Castle, seat of the Bishops of Winchester for some 800 years.' },
       { name: 'Puttenham', lat: 51.2225, lon: -0.672 },
-      { name: 'Guildford', lat: 51.2265, lon: -0.576, label: true, stageEnd: 1 },
-      { name: 'St Martha\u2019s Hill', lat: 51.2216, lon: -0.525, label: true, pause: true, note: 'St Martha-on-the-Hill, a chapel high on the pilgrim road above Guildford.' },
+      { name: 'Watts Chapel, Compton', lat: 51.22, lon: -0.631, label: true, poi: true, note: 'An Arts and Crafts chapel designed by Mary Watts and decorated by the people of Compton.' },
+      { name: 'Guildford', lat: 51.2265, lon: -0.576, label: true, stageEnd: 1, note: 'The old pilgrim crossing of the River Wey, below the ruined St Catherine\u2019s Chapel.' },
+      { name: 'St Martha\u2019s Hill', lat: 51.2216, lon: -0.525, label: true, poi: true, pause: true, note: 'St Martha-on-the-Hill, a chapel high on the pilgrim road above Guildford.' },
+      { name: 'Newlands Corner', lat: 51.2333, lon: -0.508, label: true, poi: true, note: 'One of the great viewpoints of the North Downs, looking south over the Weald.' },
+      { name: 'Stepping stones, River Mole', lat: 51.2497, lon: -0.3233, label: true, poi: true, note: 'Stepping stones across the River Mole at the foot of Box Hill.' },
       { name: 'Box Hill', lat: 51.2537, lon: -0.31, label: true, note: 'The North Downs at their most famous: a chalk escarpment above the Weald.' },
       { name: 'Reigate Hill', lat: 51.26, lon: -0.205 },
       { name: 'Oxted Downs', lat: 51.276, lon: -0.01 },
-      { name: 'Otford, near Sevenoaks', lat: 51.312, lon: 0.188, label: true, stageEnd: 2 },
-      { name: 'Kemsing', lat: 51.304, lon: 0.237 },
+      { name: 'Otford, near Sevenoaks', lat: 51.312, lon: 0.188, label: true, stageEnd: 2, note: 'The ruins of Otford Palace, once among the grandest houses of the archbishops of Canterbury.' },
+      { name: 'St Edith\u2019s Well, Kemsing', lat: 51.3045, lon: 0.2356, label: true, poi: true, note: 'A holy well dedicated to St Edith, said to have been born in the village.' },
       { name: 'Wrotham', lat: 51.31, lon: 0.31 },
       { name: 'Medway crossing', lat: 51.371, lon: 0.483 },
-      { name: 'Kit\u2019s Coty House', lat: 51.3185, lon: 0.503, label: true, pause: true, note: 'A Neolithic burial chamber, more than 5,000 years old, beside the old track.' },
+      { name: 'Kit\u2019s Coty House', lat: 51.3185, lon: 0.503, label: true, poi: true, pause: true, note: 'A Neolithic burial chamber, more than 5,000 years old, beside the old track.' },
       { name: 'Detling', lat: 51.294, lon: 0.573 },
       { name: 'Hollingbourne', lat: 51.265, lon: 0.642 },
-      { name: 'Charing', lat: 51.212, lon: 0.794, label: true },
-      { name: 'Boughton Lees', lat: 51.189, lon: 0.883 },
+      { name: 'Charing', lat: 51.212, lon: 0.794, label: true, note: 'The ruined palace where archbishops broke their journey to Canterbury.' },
+      { name: 'Boughton Lees', lat: 51.189, lon: 0.883, note: 'The North Downs Way divides here: the pilgrims\u2019 branch turns north for Canterbury.' },
       { name: 'Chilham', lat: 51.245, lon: 0.962, label: true, stageEnd: 3, pause: true, note: 'A medieval village square between the castle and the church.' },
+      { name: 'Harbledown', lat: 51.2836, lon: 1.0573, label: true, poi: true, note: 'The last halt before Canterbury, with a hospital founded around 1084. Chaucer\u2019s pilgrims pass this way near the end of the Tales.' },
       { name: 'Canterbury Cathedral', lat: 51.2798, lon: 1.0828, label: true, stageEnd: 4, note: 'Where Thomas Becket was murdered in 1170. His shrine drew pilgrims for more than three centuries.' },
     ],
   },

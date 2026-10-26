@@ -531,6 +531,7 @@ export default function FlythroughMap({
       // --- Animation ------------------------------------------------------------------
       const cam = { lng: lng[0], lat: lat[0], alt: 0, tLng: lng[0], tLat: lat[0], tAlt: 0, ready: false };
       let roll = 0;
+      let smoothAlt: number | null = null;
       let last = performance.now();
       let lastStage = -1;
       let lastPlace = -1;
@@ -615,10 +616,18 @@ export default function FlythroughMap({
         const blend = easeInOut(s.overview);
 
         // Walker.
+        // Glide between track samples rather than stepping 25 m at a time.
         const i = indexAt(d);
-        const wLng = lng[i];
-        const wLat = lat[i];
-        const wAlt = groundAlt([wLng, wLat], elev[i]);
+        const f = Math.min(Math.max(d / SAMPLE_M, 0), count - 1);
+        const i0 = Math.min(Math.floor(f), count - 2);
+        const t = f - i0;
+        const wLng = lerp(lng[i0], lng[i0 + 1], t);
+        const wLat = lerp(lat[i0], lat[i0 + 1], t);
+        // Ground height jitters as finer terrain tiles load, so ease it (but jump after a seek).
+        const rawAlt = groundAlt([wLng, wLat], lerp(elev[i0], elev[i0 + 1], t));
+        if (smoothAlt === null || Math.abs(rawAlt - smoothAlt) > 300) smoothAlt = rawAlt;
+        else smoothAlt = lerp(smoothAlt, rawAlt, 1 - Math.exp(-dt * 5));
+        const wAlt = smoothAlt;
         const back = railAt(indexAt(d - BACK_M));
         const ahead = railAt(indexAt(d + 600));
         const heading = bearingBetween(back, ahead);
@@ -700,7 +709,7 @@ export default function FlythroughMap({
         }
 
         // Trail walked so far, ending at the walker.
-        if (i !== lastWalked && now - lastWalkedAt > 250) {
+        if (i !== lastWalked && now - lastWalkedAt > 120) {
           lastWalked = i;
           lastWalkedAt = now;
           const target = d * trackScale;

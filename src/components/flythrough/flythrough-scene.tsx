@@ -6,6 +6,7 @@ import * as THREE from 'three';
 import type { Flythrough } from '@/lib/flythroughs';
 import type { RouteStage } from '@/lib/routes';
 import { createPilgrim } from './pilgrim';
+import { AERIAL_CREDIT, DetailImagery, IBERIAN_AERIAL } from './detail-imagery';
 
 interface TerrainMeta {
   west: number;
@@ -32,7 +33,15 @@ type HiresTile = TileManifest['tiles'][number] & {
   dispose?: () => void;
 };
 
+interface Track {
+  credit: string;
+  km: number;
+  points: [number, number][];
+}
+
 interface Props {
+  /** Where the baked terrain files are served from. */
+  assetBase?: string;
   slug: string;
   routeName: string;
   flythrough: Flythrough;
@@ -40,21 +49,26 @@ interface Props {
   ctaLabel: string;
 }
 
-type Phase = 'loading' | 'intro' | 'flying' | 'done' | 'error';
+type Phase = 'loading' | 'intro' | 'flying' | 'arrival' | 'done' | 'error';
 
 // Scene units are kilometres on the ground; heights are exaggerated.
 const KM_PER_DEG_LAT = 110.574;
 const KM_PER_DEG_LON = 111.32;
-const SAMPLE_KM = 0.2;
-const RAIL_SMOOTH_KM = 8;
-const CAMERA_BACK_KM = 7;
-const LOOK_AHEAD_KM = 4;
-const FLIGHT_SECONDS = 150;
+const SAMPLE_KM = 0.05;
+const RAIL_SMOOTH_KM = 2.5;
+const CAMERA_BACK_KM = 2.4;
+const CAMERA_HEIGHT_KM = 1;
+const LOOK_AHEAD_KM = 1.2;
+const FLIGHT_SECONDS = 480;
+const ARRIVAL_SECONDS = 7;
+// Aerial photography streamed around the walker: chunk zoom and radius in km.
+const DETAIL_ZOOM = 13;
+const LANDMARK_ZOOM = 15;
 const INTRO_SECONDS = 3;
 const SPEEDS = [1, 2, 4];
 
 const FOG_NEAR = 0.0009;
-const FOG_FOLLOW = 0.011;
+const FOG_FOLLOW = 0.014;
 const HAZE = '#e7dfd2';
 
 const smoothstep = (a: number, b: number, x: number) => {
@@ -99,7 +113,14 @@ function formatKm(km: number) {
   return Math.round(km).toLocaleString('en-GB');
 }
 
-export default function FlythroughScene({ slug, routeName, flythrough, stages, ctaLabel }: Props) {
+export default function FlythroughScene({
+  assetBase = '/terrain',
+  slug,
+  routeName,
+  flythrough,
+  stages,
+  ctaLabel,
+}: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasHostRef = useRef<HTMLDivElement>(null);
   const labelsRef = useRef<HTMLDivElement>(null);
@@ -115,6 +136,8 @@ export default function FlythroughScene({ slug, routeName, flythrough, stages, c
   const [placeIdx, setPlaceIdx] = useState(0);
   const [noteIdx, setNoteIdx] = useState<number | null>(null);
   const [imageryCredit, setImageryCredit] = useState<string | null>(null);
+  const [trackCredit, setTrackCredit] = useState<string | null>(null);
+  const [routeTotalKm, setRouteTotalKm] = useState(flythrough.routeKm);
   const [profile, setProfile] = useState<{ path: string; stageX: number[] } | null>(null);
 
   // Mutable animation state shared between React handlers and the render loop.
@@ -138,7 +161,7 @@ export default function FlythroughScene({ slug, routeName, flythrough, stages, c
   }, [speedIdx]);
   useEffect(() => {
     sim.current.phase = phase;
-    sim.current.overviewTarget = phase === 'flying' ? 0 : 1;
+    sim.current.overviewTarget = phase === 'intro' || phase === 'loading' ? 1 : 0;
   }, [phase]);
 
   useEffect(() => {
@@ -155,15 +178,19 @@ export default function FlythroughScene({ slug, routeName, flythrough, stages, c
     const labelEls: HTMLDivElement[] = [];
 
     async function init() {
-      const [meta, buf] = await Promise.all([
-        fetch(`/terrain/${terrain}.json`).then((r) => {
+      const [meta, buf, track] = await Promise.all([
+        fetch(`${assetBase}/${terrain}.json`).then((r) => {
           if (!r.ok) throw new Error('terrain meta');
           return r.json() as Promise<TerrainMeta>;
         }),
-        fetch(`/terrain/${terrain}.bin`).then((r) => {
+        fetch(`${assetBase}/${terrain}.bin`).then((r) => {
           if (!r.ok) throw new Error('terrain data');
           return r.arrayBuffer();
         }),
+        // The walking track from OpenStreetMap (scripts/fetch-route-track.py); optional.
+        fetch(`${assetBase}/${terrain}-track.json`)
+          .then((r) => (r.ok ? (r.json() as Promise<Track>) : null))
+          .catch(() => null),
       ]);
       if (disposed) return;
       const heights = new Int16Array(buf);
@@ -201,12 +228,28 @@ export default function FlythroughScene({ slug, routeName, flythrough, stages, c
         );
       };
       const metresAtXZ = (x: number, z: number) => metresAt(toLon(x), toLat(z));
+      // Height on the rendered terrain surface: the same two triangles per cell as the mesh,
+      // so things placed with it sit exactly on the ground instead of above or below it.
+      const surfaceMetres = (lon: number, lat: number) => {
+        const fx = ((lon - meta.west) / (meta.east - meta.west)) * (meta.width - 1);
+        const fy = ((meta.north - lat) / (meta.north - meta.south)) * (meta.height - 1);
+        const ix = Math.min(Math.max(Math.floor(fx), 0), meta.width - 2);
+        const iy = Math.min(Math.max(Math.floor(fy), 0), meta.height - 2);
+        const dx = Math.min(Math.max(fx - ix, 0), 1);
+        const dy = Math.min(Math.max(fy - iy, 0), 1);
+        const at = (x: number, y: number) => Math.max(heights[y * meta.width + x], 0);
+        const a = at(ix, iy);
+        const b = at(ix + 1, iy);
+        const d = at(ix, iy + 1);
+        const e = at(ix + 1, iy + 1);
+        return dx + dy <= 1 ? a + (b - a) * dx + (d - a) * dy : e + (d - e) * (1 - dx) + (b - e) * (1 - dy);
+      };
       const groundY = (x: number, z: number) => toY(metresAtXZ(x, z));
 
       // --- Scene -------------------------------------------------------------
       const scene = new THREE.Scene();
       scene.fog = new THREE.FogExp2(HAZE, FOG_NEAR);
-      const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 3000);
+      const camera = new THREE.PerspectiveCamera(48, 1, 0.02, 3000);
 
       scene.add(new THREE.HemisphereLight('#f4efe6', '#6b6152', 1.1));
       const sun = new THREE.DirectionalLight('#fff3dd', 2.4);
@@ -345,7 +388,7 @@ export default function FlythroughScene({ slug, routeName, flythrough, stages, c
           disposables.push(texture, imageryMat);
           setImageryCredit(credit);
         };
-        img.src = `/terrain/${terrain}.jpg`;
+        img.src = `${assetBase}/${terrain}.jpg`;
       }
 
       // --- High-resolution tiles along the route ---------------------------------
@@ -364,7 +407,7 @@ export default function FlythroughScene({ slug, routeName, flythrough, stages, c
       const tiles = new Map<string, HiresTile>();
       const tileKeys = new Set<string>();
       let tileLoads = 0;
-      fetch(`/terrain/${terrain}/tiles.json`)
+      fetch(`${assetBase}/${terrain}/tiles.json`)
         .then((res) => (res.ok ? (res.json() as Promise<TileManifest>) : null))
         .then((manifest) => {
           if (!manifest || disposed) return;
@@ -480,7 +523,7 @@ export default function FlythroughScene({ slug, routeName, flythrough, stages, c
             t.state = 'loading';
             tileLoads++;
             const image = new Image();
-            image.src = `/terrain/${terrain}/tiles/${t.file}`;
+            image.src = `${assetBase}/${terrain}/tiles/${t.file}`;
             image
               .decode()
               .then(() => {
@@ -504,23 +547,42 @@ export default function FlythroughScene({ slug, routeName, flythrough, stages, c
       disposables.push({ dispose: () => tiles.forEach((t) => t.dispose?.()) });
 
       // --- Route ---------------------------------------------------------------
-      const flatCurve = new THREE.CatmullRomCurve3(
-        waypoints.map((w) => new THREE.Vector3(toX(w.lon), 0, toZ(w.lat))),
-        false,
-        'centripetal',
-      );
-      const n = Math.ceil(flatCurve.getLength() / SAMPLE_KM);
-      const pts = flatCurve.getSpacedPoints(n);
+      let pts: THREE.Vector3[];
+      if (track && track.points.length > 1) {
+        // Resample the real track at even spacing so index maps straight to distance.
+        const raw = track.points.map(([la, lo]) => new THREE.Vector3(toX(lo), 0, toZ(la)));
+        pts = [raw[0].clone()];
+        let carry = 0;
+        for (let k = 1; k < raw.length; k++) {
+          const seg = raw[k].distanceTo(raw[k - 1]);
+          let at = SAMPLE_KM - carry;
+          while (at <= seg) {
+            pts.push(raw[k - 1].clone().lerp(raw[k], at / seg));
+            at += SAMPLE_KM;
+          }
+          carry = seg - (at - SAMPLE_KM);
+        }
+        pts.push(raw[raw.length - 1].clone());
+        setTrackCredit(track.credit);
+        setRouteTotalKm(track.km);
+      } else {
+        const flatCurve = new THREE.CatmullRomCurve3(
+          waypoints.map((w) => new THREE.Vector3(toX(w.lon), 0, toZ(w.lat))),
+          false,
+          'centripetal',
+        );
+        pts = flatCurve.getSpacedPoints(Math.ceil(flatCurve.getLength() / SAMPLE_KM));
+      }
       const dist = new Float32Array(pts.length);
       const metres = new Float32Array(pts.length);
       // Ground distance first, before the points are lifted onto the terrain.
       for (let i = 1; i < pts.length; i++) dist[i] = dist[i - 1] + pts[i].distanceTo(pts[i - 1]);
       for (let i = 0; i < pts.length; i++) {
-        metres[i] = Math.max(metresAtXZ(pts[i].x, pts[i].z), 0);
-        pts[i].y = toY(metres[i]) + 0.1;
+        metres[i] = surfaceMetres(toLon(pts[i].x), toLat(pts[i].z));
+        pts[i].y = toY(metres[i]) + 0.02;
       }
       const totalKm = dist[dist.length - 1];
-      const kmScale = routeKm / totalKm;
+      const kmScale = (track?.km ?? routeKm) / totalKm;
 
       // Smoothed camera rail (moving average) so the camera doesn't zig-zag with the path.
       const w = Math.round(RAIL_SMOOTH_KM / SAMPLE_KM);
@@ -534,22 +596,37 @@ export default function FlythroughScene({ slug, routeName, flythrough, stages, c
 
       const radial = 6;
       const routeCurve = new THREE.CatmullRomCurve3(pts);
-      const routeGeo = new THREE.TubeGeometry(routeCurve, pts.length - 1, 0.05, radial, false);
-      const routeMat = new THREE.MeshBasicMaterial({ color: '#d9a441' });
+      // Enough arc-length samples that tube segment i sits at track point i.
+      routeCurve.arcLengthDivisions = pts.length * 2;
+      const routeGeo = new THREE.TubeGeometry(routeCurve, pts.length - 1, 0.012, radial, false);
+      const routeMat = new THREE.MeshBasicMaterial({
+        color: '#d9a441',
+        polygonOffset: true,
+        polygonOffsetFactor: -8,
+        polygonOffsetUnits: -8,
+      });
       const routeMesh = new THREE.Mesh(routeGeo, routeMat);
       routeMesh.renderOrder = 2;
       scene.add(routeMesh);
-      const ghostGeo = new THREE.TubeGeometry(routeCurve, pts.length - 1, 0.035, 4, false);
-      const ghostMat = new THREE.MeshBasicMaterial({ color: '#fbf6ee', transparent: true, opacity: 0.75 });
-      scene.add(new THREE.Mesh(ghostGeo, ghostMat));
+      const ghostGeo = new THREE.TubeGeometry(routeCurve, pts.length - 1, 0.007, 4, false);
+      const ghostMat = new THREE.MeshBasicMaterial({
+        color: '#fbf6ee',
+        transparent: true,
+        opacity: 0.75,
+        polygonOffset: true,
+        polygonOffsetFactor: -8,
+        polygonOffsetUnits: -8,
+      });
+      const ghostMesh = new THREE.Mesh(ghostGeo, ghostMat);
+      scene.add(ghostMesh);
       disposables.push(routeGeo, routeMat, ghostGeo, ghostMat);
 
       const walker = new THREE.Group();
       const pilgrim = createPilgrim();
-      pilgrim.group.scale.setScalar(0.9);
+      pilgrim.group.scale.setScalar(0.09);
       walker.add(pilgrim.group);
       disposables.push(pilgrim);
-      const haloGeo = new THREE.RingGeometry(0.22, 0.32, 40);
+      const haloGeo = new THREE.RingGeometry(0.03, 0.045, 40);
       const haloMat = new THREE.MeshBasicMaterial({
         color: '#d9a441',
         transparent: true,
@@ -576,7 +653,7 @@ export default function FlythroughScene({ slug, routeName, flythrough, stages, c
             bestD = d;
             best = i;
           }
-          if (d > bestD + 400) break;
+          if (d > bestD + 400) break; // 20 km past the best match
         }
         cursor = best;
         wpDist.push(dist[best]);
@@ -595,7 +672,7 @@ export default function FlythroughScene({ slug, routeName, flythrough, stages, c
         const x = toX(wp.lon);
         const z = toZ(wp.lat);
         const y = groundY(x, z);
-        pinPositions.push(x, y, z, x, y + 1.6, z);
+        pinPositions.push(x, y, z, x, y + 0.5, z);
         const el = document.createElement('div');
         el.className =
           'absolute left-0 top-0 whitespace-nowrap rounded-full bg-slate-deep/80 px-2.5 py-1 text-[11px] font-medium tracking-wide text-parchment shadow-sm will-change-transform';
@@ -604,7 +681,7 @@ export default function FlythroughScene({ slug, routeName, flythrough, stages, c
         labelHost!.appendChild(el);
         labelEls.push(el);
         return {
-          pos: new THREE.Vector3(x, y + 1.6, z),
+          pos: new THREE.Vector3(x, y + 0.5, z),
           el,
           major: wp.stageEnd !== undefined || i === 0,
         };
@@ -665,6 +742,21 @@ export default function FlythroughScene({ slug, routeName, flythrough, stages, c
       resizeObserver = new ResizeObserver(resize);
       resizeObserver.observe(host!);
 
+      // Aerial photography near the walker, and a sharper patch over the destination.
+      const detail = new DetailImagery({
+        scene,
+        renderer: r,
+        source: IBERIAN_AERIAL,
+        project: (lon, lat) => new THREE.Vector3(toX(lon), toY(surfaceMetres(lon, lat)), toZ(lat)),
+      });
+      disposables.push(detail);
+      const detailRadius = window.innerWidth < 768 ? 3.5 : 4.5;
+      const destination = waypoints[waypoints.length - 1];
+      const destPos = new THREE.Vector3(toX(destination.lon), 0, toZ(destination.lat));
+      destPos.y = groundY(destPos.x, destPos.z);
+      let landmarkPinned = false;
+      const focus = new THREE.Vector3();
+
       // --- Animation -----------------------------------------------------------------
       const indexAt = (d: number) => Math.min(Math.max(Math.round(d / SAMPLE_KM), 0), pts.length - 1);
       const followPos = new THREE.Vector3();
@@ -681,6 +773,9 @@ export default function FlythroughScene({ slug, routeName, flythrough, stages, c
       let lastNote: number | null = -1;
       let lastKm = -1;
       let lastTileCheck = 0;
+      let lastDetailCheck = 0;
+      let arrivalT = 0;
+      let orbitAngle = 0;
 
       const tick = (now: number) => {
         raf = requestAnimationFrame(tick);
@@ -695,8 +790,22 @@ export default function FlythroughScene({ slug, routeName, flythrough, stages, c
             s.progress = 1;
             s.playing = false;
             setPlaying(false);
+            s.phase = 'arrival';
+            setPhase('arrival');
+          }
+        }
+        const arriving = s.phase === 'arrival' || s.phase === 'done';
+        if (arriving) {
+          if (arrivalT === 0) {
+            orbitAngle = Math.atan2(camera.position.z - destPos.z, camera.position.x - destPos.x);
+          }
+          arrivalT += dt;
+          if (s.phase === 'arrival' && arrivalT > ARRIVAL_SECONDS) {
+            s.phase = 'done';
             setPhase('done');
           }
+        } else {
+          arrivalT = 0;
         }
         const towards = s.overviewTarget;
         const rate = dt / INTRO_SECONDS;
@@ -706,10 +815,11 @@ export default function FlythroughScene({ slug, routeName, flythrough, stages, c
         const d = s.progress * totalKm;
         const i = indexAt(d);
         const walkerPos = pts[i];
-        walker.position.copy(walkerPos).y -= 0.08;
+        walker.position.copy(walkerPos).y -= 0.02;
         const pulse = 1 + Math.sin(now / 300) * 0.15;
         halo.scale.setScalar(pulse);
-        walker.scale.setScalar(1 + blend * 6);
+        walker.scale.setScalar(1 + blend * 40);
+        ghostMesh.visible = !arriving;
 
         routeGeo.setDrawRange(0, i * radial * 6);
 
@@ -728,7 +838,7 @@ export default function FlythroughScene({ slug, routeName, flythrough, stages, c
           const z = THREE.MathUtils.lerp(followPos.z, walkerPos.z, t);
           floor = Math.max(floor, groundY(x, z));
         }
-        followPos.y = Math.max(walkerPos.y + 3.4, floor + 2);
+        followPos.y = Math.max(walkerPos.y + CAMERA_HEIGHT_KM, floor + 0.4);
         followTarget.copy(walkerPos).addScaledVector(dir, LOOK_AHEAD_KM);
         followTarget.y = walkerPos.y;
 
@@ -741,8 +851,21 @@ export default function FlythroughScene({ slug, routeName, flythrough, stages, c
           const k = 1 - Math.exp(-dt * 3);
           smoothPos.lerp(followPos, k);
           smoothTarget.lerp(followTarget, k);
-          if (smoothPos.distanceTo(followPos) > 40) smoothPos.copy(followPos);
-          if (smoothTarget.distanceTo(followTarget) > 40) smoothTarget.copy(followTarget);
+          if (smoothPos.distanceTo(followPos) > 15) smoothPos.copy(followPos);
+          if (smoothTarget.distanceTo(followTarget) > 15) smoothTarget.copy(followTarget);
+        }
+        if (arriving) {
+          // Arrival: ease from following the walker into a slow circle over the destination.
+          const a = easeInOut(Math.min(arrivalT / 5, 1));
+          orbitAngle += dt * 0.08;
+          const radius = THREE.MathUtils.lerp(2.4, 1.3, a);
+          tmp.set(
+            destPos.x + Math.cos(orbitAngle) * radius,
+            destPos.y + THREE.MathUtils.lerp(CAMERA_HEIGHT_KM, 0.85, a),
+            destPos.z + Math.sin(orbitAngle) * radius,
+          );
+          smoothPos.lerp(tmp, a);
+          smoothTarget.lerp(destPos, a);
         }
         camPos.lerpVectors(smoothPos, overviewPos, blend);
         camTarget.lerpVectors(smoothTarget, overviewTarget, blend);
@@ -754,6 +877,19 @@ export default function FlythroughScene({ slug, routeName, flythrough, stages, c
           lastTileCheck = now;
           updateTiles([walkerPos, rail[indexAt(d + 35)]]);
         }
+        if (blend < 0.5 && now - lastDetailCheck > 300) {
+          lastDetailCheck = now;
+          // Centre the sharp imagery a little ahead of the walker, where the camera looks.
+          focus.copy(arriving ? destPos : rail[indexAt(d + 1.2)]);
+          detail.update(toLon(focus.x), toLat(focus.z), focus, detailRadius, DETAIL_ZOOM);
+          if (!landmarkPinned && totalKm - d < 25) {
+            detail.pin(destination.lon, destination.lat, LANDMARK_ZOOM, 3);
+            landmarkPinned = true;
+          } else if (landmarkPinned && totalKm - d > 40) {
+            detail.release(LANDMARK_ZOOM);
+            landmarkPinned = false;
+          }
+        }
 
         r.render(scene, camera);
 
@@ -764,7 +900,7 @@ export default function FlythroughScene({ slug, routeName, flythrough, stages, c
           const distance = a.pos.distanceTo(camera.position);
           let opacity = 0;
           if (tmp.z < 1 && Math.abs(tmp.x) < 1.1 && Math.abs(tmp.y) < 1.1) {
-            opacity = blend > 0.5 ? (a.major ? 1 : 0) : 1 - smoothstep(35, 70, distance);
+            opacity = blend > 0.5 ? (a.major ? 1 : 0) : 1 - smoothstep(12, 25, distance);
           }
           a.el.style.opacity = opacity.toFixed(2);
           a.el.style.transform = `translate(${((tmp.x + 1) / 2) * cw}px, ${((1 - tmp.y) / 2) * ch}px) translate(-50%, -130%)`;
@@ -824,7 +960,7 @@ export default function FlythroughScene({ slug, routeName, flythrough, stages, c
         renderer.dispose();
       }
     };
-  }, [terrain, waypoints, exaggeration, routeKm]);
+  }, [assetBase, terrain, waypoints, exaggeration, routeKm]);
 
   const begin = useCallback(() => {
     if (sim.current.progress >= 1) sim.current.progress = 0;
@@ -878,34 +1014,35 @@ export default function FlythroughScene({ slug, routeName, flythrough, stages, c
         <div className="max-w-md">
           <Link
             href={`/routes/${slug}`}
-            className="pointer-events-auto text-xs font-medium uppercase tracking-widest text-slate-deep/70 hover:text-slate-deep"
+            className="pointer-events-auto text-xs font-medium uppercase tracking-widest text-slate-deep/80 hover:text-slate-deep"
+            style={{ textShadow: '0 0 8px rgba(245,240,235,0.9)' }}
           >
             &larr; {routeName}
           </Link>
-          {phase === 'flying' && (
+          {(phase === 'flying' || phase === 'arrival') && (
             <>
               <p
                 className="mt-3 text-xs font-medium uppercase tracking-widest text-slate-deep/80"
-                style={{ textShadow: "0 0 8px rgba(245,240,235,0.9)" }}
+                style={{ textShadow: '0 0 8px rgba(245,240,235,0.9)' }}
               >
                 {stage?.label} &middot; {stage?.name}
               </p>
               <h1
                 className="mt-1 font-display text-3xl sm:text-4xl leading-tight text-slate-deep"
-                style={{ textShadow: "0 0 12px rgba(245,240,235,0.9), 0 0 3px rgba(245,240,235,0.9)" }}
+                style={{ textShadow: '0 0 12px rgba(245,240,235,0.9), 0 0 3px rgba(245,240,235,0.9)' }}
               >
                 {place?.name}
               </h1>
             </>
           )}
         </div>
-        {phase === 'flying' && (
+        {(phase === 'flying' || phase === 'arrival') && (
           <dl className="shrink-0 rounded-lg bg-parchment/85 px-4 py-3 text-right shadow-sm backdrop-blur-sm">
             <div>
               <dt className="text-[10px] uppercase tracking-widest text-stone">Walked</dt>
               <dd className="font-display text-2xl text-slate-deep tabular-nums">
                 <span ref={kmRef}>0</span>
-                <span className="text-base text-stone"> / {formatKm(routeKm)} km</span>
+                <span className="text-base text-stone"> / {formatKm(routeTotalKm)} km</span>
               </dd>
             </div>
             <div className="mt-1">
@@ -930,7 +1067,7 @@ export default function FlythroughScene({ slug, routeName, flythrough, stages, c
       )}
 
       {/* Bottom controls */}
-      {(phase === 'flying' || phase === 'done') && (
+      {(phase === 'flying' || phase === 'arrival' || phase === 'done') && (
         <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-parchment via-parchment/90 to-transparent px-4 pb-4 pt-10 sm:px-8">
           <div className="mx-auto max-w-5xl">
             <div className="mb-2 flex gap-1.5 overflow-x-auto pb-1">
@@ -1001,7 +1138,8 @@ export default function FlythroughScene({ slug, routeName, flythrough, stages, c
             </div>
             {imageryCredit && (
               <p className="mt-1.5 text-right text-[10px] text-stone/80">
-                Imagery: {imageryCredit} &middot; Elevation: Mapzen Terrain Tiles
+                Imagery: {imageryCredit}; {AERIAL_CREDIT} &middot; Elevation: Mapzen Terrain Tiles
+                {trackCredit && <> &middot; {trackCredit}</>}
               </p>
             )}
           </div>
@@ -1031,7 +1169,7 @@ export default function FlythroughScene({ slug, routeName, flythrough, stages, c
             <p className="text-xs font-medium uppercase tracking-widest text-ochre">3D Flythrough</p>
             <h1 className="mt-2 font-display text-3xl sm:text-4xl text-slate-deep">{routeName}</h1>
             <p className="mt-3 text-stone leading-relaxed">
-              Follow {formatKm(routeKm)} km of the Way across real terrain, from {waypoints[0].name} to{' '}
+              Follow {formatKm(routeTotalKm)} km of the Way across real terrain, from {waypoints[0].name} to{' '}
               {waypoints[waypoints.length - 1].name}.
             </p>
             <button
@@ -1043,32 +1181,33 @@ export default function FlythroughScene({ slug, routeName, flythrough, stages, c
             </button>
             <p className="mt-4 text-[11px] text-stone/80">
               Elevation data: Mapzen Terrain Tiles (AWS Open Data). Heights exaggerated {exaggeration}&times;.
-              {imageryCredit && <> Imagery: {imageryCredit}.</>}
+              {imageryCredit && <> Imagery: {imageryCredit}. {AERIAL_CREDIT}.</>}
+              {trackCredit && <> {trackCredit}.</>}
             </p>
           </div>
         </div>
       )}
       {phase === 'done' && (
-        <div className="absolute inset-x-0 top-1/2 flex -translate-y-1/2 justify-center px-4">
-          <div className="max-w-lg rounded-xl bg-parchment/90 p-6 sm:p-8 text-center shadow-xl backdrop-blur-sm">
+        <div className="absolute left-4 right-4 top-4 sm:left-8 sm:right-auto sm:top-24">
+          <div className="sm:max-w-sm rounded-xl bg-parchment/90 p-5 sm:p-6 shadow-xl backdrop-blur-sm animate-[fadeUp_0.6s_ease-out]">
             <p className="text-xs font-medium uppercase tracking-widest text-ochre">Journey&rsquo;s end</p>
-            <h2 className="mt-2 font-display text-3xl sm:text-4xl text-slate-deep">
+            <h2 className="mt-2 font-display text-3xl text-slate-deep">
               {waypoints[waypoints.length - 1].name}
             </h2>
-            <p className="mt-3 text-stone leading-relaxed">
-              {formatKm(routeKm)} km on foot. We book every bed and carry your bags; you just walk.
+            <p className="mt-2 text-sm text-stone leading-relaxed">
+              {formatKm(routeTotalKm)} km on foot to the cathedral. We book every bed and carry your bags; you just walk.
             </p>
-            <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-center">
+            <div className="mt-5 flex flex-wrap gap-3">
               <Link
                 href={`/enquire?route=${encodeURIComponent(routeName)}`}
-                className="inline-block rounded-md bg-forest px-6 py-3 text-sm font-medium text-white hover:bg-forest/90"
+                className="inline-block rounded-md bg-forest px-5 py-2.5 text-sm font-medium text-white hover:bg-forest/90"
               >
                 {ctaLabel}
               </Link>
               <button
                 type="button"
                 onClick={begin}
-                className="inline-block rounded-md border border-slate-deep/20 px-6 py-3 text-sm font-medium text-slate-deep hover:bg-white/60"
+                className="inline-block rounded-md border border-slate-deep/20 px-5 py-2.5 text-sm font-medium text-slate-deep hover:bg-white/60"
               >
                 Fly again
               </button>

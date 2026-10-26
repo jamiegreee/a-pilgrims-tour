@@ -24,7 +24,7 @@ export const flythroughs: Record<string, Flythrough> = {
   'camino-de-santiago': {
     terrain: 'camino-de-santiago',
     routeKm: 790,
-    exaggeration: 4,
+    exaggeration: 2,
     waypoints: [
       { name: 'Saint-Jean-Pied-de-Port', lat: 43.163, lon: -1.238, label: true, note: 'The last French town before the climb. Pilgrims collect their credential here.' },
       { name: 'Orisson', lat: 43.111, lon: -1.237 },
@@ -64,7 +64,7 @@ export const flythroughs: Record<string, Flythrough> = {
       { name: 'Arzúa', lat: 42.927, lon: -8.164 },
       { name: 'O Pedrouzo', lat: 42.905, lon: -8.360 },
       { name: 'Monte do Gozo', lat: 42.887, lon: -8.495, note: 'The Hill of Joy, where pilgrims catch their first sight of the cathedral spires.' },
-      { name: 'Santiago de Compostela', lat: 42.880, lon: -8.545, label: true, stageEnd: 4 },
+      { name: 'Santiago de Compostela', lat: 42.8806, lon: -8.5446, label: true, stageEnd: 4 },
     ],
   },
 };

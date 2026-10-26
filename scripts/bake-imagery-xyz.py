@@ -135,7 +135,7 @@ def bake_block(block):
         return arr
 
     # More passes per median over the wide region blocks evens out colour between neighbours.
-    per_grid = 4 if mode == "region" else 3
+    per_grid = int(os.environ.get("REGION_PASSES", 4)) if mode == "region" else 3
     stack = [a for scenes in by_grid.values() for s in scenes[:per_grid] if (a := read(s)) is not None]
     with np.errstate(all="ignore"):
         med = np.nanmedian(np.stack(stack), axis=0) if stack else np.full((3, px, px), np.nan, np.float32)

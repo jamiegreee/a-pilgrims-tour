@@ -18,6 +18,20 @@ interface TerrainMeta {
   imagery?: { width: number; height: number; credit: string };
 }
 
+interface TileManifest {
+  px: number;
+  credit: string;
+  tiles: { col: number; row: number; i0: number; j0: number; i1: number; j1: number; file: string }[];
+}
+
+type HiresTile = TileManifest['tiles'][number] & {
+  cx: number;
+  cz: number;
+  state: 'idle' | 'loading' | 'ready';
+  mesh?: THREE.Mesh;
+  dispose?: () => void;
+};
+
 interface Props {
   slug: string;
   routeName: string;
@@ -334,6 +348,161 @@ export default function FlythroughScene({ slug, routeName, flythrough, stages, c
         img.src = `/terrain/${terrain}.jpg`;
       }
 
+      // --- High-resolution tiles along the route ---------------------------------
+      // Streamed in near the walker and dropped once far behind (see scripts/bake-imagery-tiles.py).
+      const isSmall = window.innerWidth < 768;
+      const tileLoadKm = isSmall ? 55 : 75;
+      const tileDropKm = tileLoadKm + 45;
+      const slopeY = (i: number, j: number) => {
+        const ic = Math.min(Math.max(i, 0), meta.width - 1);
+        const jc = Math.min(Math.max(j, 0), meta.height - 1);
+        const m = heights[jc * meta.width + ic];
+        return m <= 0 ? -0.05 : toY(m);
+      };
+      const cellX = toX(meta.west + (meta.east - meta.west) / (meta.width - 1)) - toX(meta.west);
+      const cellZ = toZ(meta.north) - toZ(meta.north - (meta.north - meta.south) / (meta.height - 1));
+      const tiles = new Map<string, HiresTile>();
+      const tileKeys = new Set<string>();
+      let tileLoads = 0;
+      fetch(`/terrain/${terrain}/tiles.json`)
+        .then((res) => (res.ok ? (res.json() as Promise<TileManifest>) : null))
+        .then((manifest) => {
+          if (!manifest || disposed) return;
+          for (const t of manifest.tiles) {
+            const key = `${t.col}_${t.row}`;
+            tileKeys.add(key);
+            const cx = toX(meta.west + ((meta.east - meta.west) * (t.i0 + t.i1)) / 2 / (meta.width - 1));
+            const cz = toZ(meta.north - ((meta.north - meta.south) * (t.j0 + t.j1)) / 2 / (meta.height - 1));
+            tiles.set(key, { ...t, cx, cz, state: 'idle' });
+          }
+        })
+        .catch(() => {});
+
+      const buildTile = (t: HiresTile, image: HTMLImageElement) => {
+        if (!renderer) return;
+        const size = Math.min(isSmall ? 1024 : 2048, renderer.capabilities.maxTextureSize);
+        const canvas = document.createElement('canvas');
+        canvas.width = canvas.height = size;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+        ctx.drawImage(image, 0, 0, size, size);
+        // Feather edges that border the low-resolution base map rather than another tile.
+        ctx.globalCompositeOperation = 'destination-out';
+        const f = size * 0.12;
+        const sides: [string, number, number, number, number, number, number, number, number][] = [
+          [`${t.col - 1}_${t.row}`, 0, 0, f, 0, 0, 0, f, size],
+          [`${t.col + 1}_${t.row}`, size, 0, size - f, 0, size - f, 0, f, size],
+          [`${t.col}_${t.row - 1}`, 0, 0, 0, f, 0, 0, size, f],
+          [`${t.col}_${t.row + 1}`, 0, size, 0, size - f, 0, size - f, size, f],
+        ];
+        let feathered = false;
+        for (const [neighbour, x0, y0, x1, y1, rx, ry, rw, rh] of sides) {
+          if (tileKeys.has(neighbour)) continue;
+          const g = ctx.createLinearGradient(x0, y0, x1, y1);
+          g.addColorStop(0, 'rgba(0,0,0,1)');
+          g.addColorStop(1, 'rgba(0,0,0,0)');
+          ctx.fillStyle = g;
+          ctx.fillRect(rx, ry, rw, rh);
+          feathered = true;
+        }
+        const texture = new THREE.CanvasTexture(canvas);
+        texture.colorSpace = THREE.SRGBColorSpace;
+        texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+
+        const tc = t.i1 - t.i0 + 1;
+        const tr = t.j1 - t.j0 + 1;
+        const pos = new Float32Array(tc * tr * 3);
+        const nrm = new Float32Array(tc * tr * 3);
+        const uv = new Float32Array(tc * tr * 2);
+        for (let r = 0; r < tr; r++) {
+          const j = t.j0 + r;
+          const lat = meta.north - ((meta.north - meta.south) * j) / (meta.height - 1);
+          for (let c = 0; c < tc; c++) {
+            const i = t.i0 + c;
+            const lon = meta.west + ((meta.east - meta.west) * i) / (meta.width - 1);
+            const v = r * tc + c;
+            pos[v * 3] = toX(lon);
+            pos[v * 3 + 1] = slopeY(i, j);
+            pos[v * 3 + 2] = toZ(lat);
+            // Normals from the whole heightfield, so lighting matches across tile seams.
+            const nx = -(slopeY(i + 1, j) - slopeY(i - 1, j)) / (2 * cellX);
+            const nz = (slopeY(i, j + 1) - slopeY(i, j - 1)) / (2 * cellZ);
+            const len = Math.hypot(nx, 1, nz);
+            nrm[v * 3] = nx / len;
+            nrm[v * 3 + 1] = 1 / len;
+            nrm[v * 3 + 2] = nz / len;
+            uv[v * 2] = c / (tc - 1);
+            uv[v * 2 + 1] = 1 - r / (tr - 1);
+          }
+        }
+        const idx = new Uint32Array((tc - 1) * (tr - 1) * 6);
+        let q = 0;
+        for (let r = 0; r < tr - 1; r++) {
+          for (let c = 0; c < tc - 1; c++) {
+            const a = r * tc + c;
+            idx[q++] = a;
+            idx[q++] = a + tc;
+            idx[q++] = a + 1;
+            idx[q++] = a + 1;
+            idx[q++] = a + tc;
+            idx[q++] = a + tc + 1;
+          }
+        }
+        const geo = new THREE.BufferGeometry();
+        geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+        geo.setAttribute('normal', new THREE.BufferAttribute(nrm, 3));
+        geo.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
+        geo.setIndex(new THREE.BufferAttribute(idx, 1));
+        const mat = new THREE.MeshLambertMaterial({
+          map: texture,
+          transparent: feathered,
+          depthWrite: !feathered,
+          polygonOffset: true,
+          polygonOffsetFactor: -2,
+          polygonOffsetUnits: -2,
+        });
+        const mesh = new THREE.Mesh(geo, mat);
+        mesh.renderOrder = 1;
+        scene.add(mesh);
+        t.mesh = mesh;
+        t.dispose = () => {
+          scene.remove(mesh);
+          geo.dispose();
+          mat.dispose();
+          texture.dispose();
+        };
+      };
+
+      const updateTiles = (near: THREE.Vector3[]) => {
+        for (const t of tiles.values()) {
+          const dist = Math.min(...near.map((p) => Math.hypot(p.x - t.cx, p.z - t.cz)));
+          if (t.state === 'idle' && dist < tileLoadKm && tileLoads < 3) {
+            t.state = 'loading';
+            tileLoads++;
+            const image = new Image();
+            image.src = `/terrain/${terrain}/tiles/${t.file}`;
+            image
+              .decode()
+              .then(() => {
+                if (disposed || t.state !== 'loading') return;
+                buildTile(t, image);
+                t.state = 'ready';
+              })
+              .catch(() => {
+                t.state = 'idle';
+              })
+              .finally(() => {
+                tileLoads--;
+              });
+          } else if (t.state === 'ready' && dist > tileDropKm) {
+            t.dispose?.();
+            t.mesh = undefined;
+            t.state = 'idle';
+          }
+        }
+      };
+      disposables.push({ dispose: () => tiles.forEach((t) => t.dispose?.()) });
+
       // --- Route ---------------------------------------------------------------
       const flatCurve = new THREE.CatmullRomCurve3(
         waypoints.map((w) => new THREE.Vector3(toX(w.lon), 0, toZ(w.lat))),
@@ -511,6 +680,7 @@ export default function FlythroughScene({ slug, routeName, flythrough, stages, c
       let lastPlace = -1;
       let lastNote: number | null = -1;
       let lastKm = -1;
+      let lastTileCheck = 0;
 
       const tick = (now: number) => {
         raf = requestAnimationFrame(tick);
@@ -579,6 +749,11 @@ export default function FlythroughScene({ slug, routeName, flythrough, stages, c
         camera.position.copy(camPos);
         camera.lookAt(camTarget);
         (scene.fog as THREE.FogExp2).density = THREE.MathUtils.lerp(FOG_FOLLOW, FOG_NEAR, blend);
+
+        if (blend < 0.5 && now - lastTileCheck > 500) {
+          lastTileCheck = now;
+          updateTiles([walkerPos, rail[indexAt(d + 35)]]);
+        }
 
         r.render(scene, camera);
 

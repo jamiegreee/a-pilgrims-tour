@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { routes, routeSlugs } from '@/lib/routes';
+import { flythroughs } from '@/lib/flythroughs';
 import type { Metadata } from 'next';
 
 export async function generateStaticParams() {
@@ -61,6 +62,14 @@ export default async function RoutePage({
           <p className="mt-4 text-lg text-parchment/80 max-w-xl leading-relaxed">
             {route.shortDescription}
           </p>
+          {flythroughs[slug] && (
+            <Link
+              href={`/routes/${slug}/flythrough`}
+              className="mt-8 inline-flex items-center gap-2 rounded-md bg-parchment/90 px-5 py-3 text-sm font-medium text-slate-deep hover:bg-parchment transition-colors"
+            >
+              Watch the 3D flythrough <span aria-hidden>&rarr;</span>
+            </Link>
+          )}
         </div>
       </section>
 

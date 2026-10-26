@@ -22,6 +22,7 @@ import numpy as np
 import rasterio
 from PIL import Image
 from rasterio.transform import from_bounds
+from rasterio.windows import Window, from_bounds as window_from_bounds
 from rasterio.warp import Resampling, reproject
 
 STAC = "https://earth-search.aws.element84.com/v1/search"
@@ -67,13 +68,24 @@ def main(slug):
     by_tile = defaultdict(list)
     for it in items:
         by_tile[it["properties"]["grid:code"]].append(it)
-    print(f"{len(items)} scenes over {len(by_tile)} grid squares")
+    print(f"{len(items)} scenes over {len(by_tile)} grid squares", flush=True)
 
     mosaic = np.zeros((3, height, width), dtype=np.uint8)
     years = set()
     for code, scenes in sorted(by_tile.items()):
         # Prefer clear scenes that cover most of the square.
         scenes.sort(key=lambda s: (s["properties"].get("s2:nodata_pixel_percentage", 0) > 40, s["properties"]["eo:cloud_cover"]))
+        # Only reproject into the part of the map this grid square covers.
+        lons = [c[0] for s in scenes[: cfg["per_tile"]] for c in s["geometry"]["coordinates"][0]]
+        lats = [c[1] for s in scenes[: cfg["per_tile"]] for c in s["geometry"]["coordinates"][0]]
+        win = window_from_bounds(max(min(lons), west), max(min(lats), south), min(max(lons), east), min(max(lats), north), dst_transform)
+        win = win.round_offsets().round_lengths()
+        col0, row0 = max(int(win.col_off), 0), max(int(win.row_off), 0)
+        w = min(int(win.width) + 2, width - col0)
+        h = min(int(win.height) + 2, height - row0)
+        if w <= 0 or h <= 0:
+            continue
+        win_transform = rasterio.windows.transform(Window(col0, row0, w, h), dst_transform)
         stack = []
         for s in scenes[: cfg["per_tile"]]:
             href = s["assets"]["visual"]["href"]
@@ -81,9 +93,9 @@ def main(slug):
                 f = 8  # ~80 m source pixels, read from the COG overviews
                 data = src.read(out_shape=(3, src.height // f, src.width // f), resampling=Resampling.average)
                 transform = src.transform * src.transform.scale(src.width / data.shape[2], src.height / data.shape[1])
-                out = np.zeros((3, height, width), dtype=np.uint8)
+                out = np.zeros((3, h, w), dtype=np.uint8)
                 reproject(data, out, src_transform=transform, src_crs=src.crs, src_nodata=0,
-                          dst_transform=dst_transform, dst_crs="EPSG:4326", dst_nodata=0,
+                          dst_transform=win_transform, dst_crs="EPSG:4326", dst_nodata=0,
                           resampling=Resampling.average)
             stack.append(out)
             years.add(s["properties"]["datetime"][:4])
@@ -92,10 +104,11 @@ def main(slug):
         arr[~np.repeat(valid, 3, axis=1)] = np.nan
         with np.errstate(all="ignore"):
             med = np.nanmedian(arr, axis=0)
-        fill = ~np.isnan(med[0]) & (mosaic.sum(axis=0) == 0)
+        region = mosaic[:, row0 : row0 + h, col0 : col0 + w]
+        fill = ~np.isnan(med[0]) & (region.sum(axis=0) == 0)
         for b in range(3):
-            mosaic[b][fill] = med[b][fill].astype(np.uint8)
-        print(f"  {code}: {len(stack)} scenes")
+            region[b][fill] = med[b][fill].astype(np.uint8)
+        print(f"  {code}: {len(stack)} scenes", flush=True)
 
     # Sentinel-2 true colour is dark and flat; lift it gently towards how the eye sees it.
     img = mosaic.transpose(1, 2, 0).astype(np.float32) / 255

@@ -4,7 +4,7 @@ const footerLinks = [
   { href: "/routes", label: "Routes" },
   { href: "/how-it-works", label: "How It Works" },
   { href: "/about", label: "About" },
-  { href: "/contact", label: "Contact" },
+  { href: "/enquire", label: "Contact" },
 ];
 
 export function Footer() {

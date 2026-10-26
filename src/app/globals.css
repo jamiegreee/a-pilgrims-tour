@@ -4,8 +4,8 @@
   --color-parchment: #F5F0EB;
   --color-slate-deep: #2B3340;
   --color-forest: #5C6B54;
-  --color-ochre: #C4A87C;
-  --color-stone: #7E8A95;
+  --color-ochre: #886332;
+  --color-stone: #626E75;
   --color-card: #EFEBE4;
   --font-display: var(--font-eb-garamond);
   --font-body: var(--font-inter);
@@ -20,4 +20,13 @@
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+html {
+  scroll-padding-top: 6rem;
+}
+
+:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 4px;
 }

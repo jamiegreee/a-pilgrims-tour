@@ -1,59 +1,33 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import type { FormEvent } from 'react';
+import { pilgrimageOptions, getPilgrimageOption } from '@/lib/pilgrimage-options';
+import { routes, ukRouteSlugs } from '@/lib/routes';
 
-const routeOptions = [
-  'Camino de Santiago',
-  'Via Francigena',
-  'Kumano Kodo',
-  "St Olav\u2019s Way",
-  "St Cuthbert\u2019s Way",
-  "The Pilgrims\u2019 Way",
-  "St Michael\u2019s Way",
-  "North Wales Pilgrim\u2019s Way",
-  "St Hilda\u2019s Way",
-  "The Saints\u2019 Way",
-  'Not sure yet',
-];
+const routeOptions = [...ukRouteSlugs.map((slug) => routes[slug].name), 'Not sure yet'];
 
-const tourTypeOptions = ['Self-Guided', 'Group Tour'];
 const groupSizes = ['1', '2', '3\u20134', '5+'];
 const paceOptions = ['Relaxed', 'Moderate', 'Challenging'];
 
-function EnquireForm() {
-  const searchParams = useSearchParams();
+function EnquireForm({ initialRoute, initialType }: { initialRoute: string; initialType: string }) {
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
 
-  const [form, setForm] = useState({
+  const [form, setForm] = useState(() => ({
     name: '',
     email: '',
     phone: '',
-    route: '',
-    tourType: '',
+    route: initialRoute,
+    tourType: initialType,
     dates: '',
     groupSize: '1',
     pace: 'Moderate',
     message: '',
-  });
-
-  useEffect(() => {
-    const routeParam = searchParams.get('route') ?? '';
-    const typeParam = searchParams.get('type') ?? '';
-    const tourType =
-      typeParam === 'group' ? 'Group Tour' :
-      typeParam === 'self-guided' ? 'Self-Guided' : '';
-    if (routeParam || tourType) {
-      setForm((prev) => ({
-        ...prev,
-        route: routeParam || prev.route,
-        tourType: tourType || prev.tourType,
-      }));
-    }
-  }, [searchParams]);
+  }));
+  const selectedOption = getPilgrimageOption(form.tourType);
 
   function updateField(field: string, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -87,7 +61,7 @@ function EnquireForm() {
 
   if (submitted) {
     return (
-      <main className="bg-parchment px-6 py-28 sm:py-36">
+      <div className="bg-parchment px-6 py-28 sm:py-36">
         <div className="mx-auto max-w-xl text-center">
           <h1
             className="text-4xl text-slate-deep"
@@ -96,7 +70,7 @@ function EnquireForm() {
             Thank you.
           </h1>
           <p className="mt-6 text-lg text-stone leading-relaxed">
-            We have received your enquiry and will be in touch within 48 hours.
+            We have received your enquiry and will be in touch to discuss your journey.
             In the meantime, you might like to read more about{' '}
             <a href="/how-it-works" className="text-forest underline">
               how our service works
@@ -104,12 +78,12 @@ function EnquireForm() {
             .
           </p>
         </div>
-      </main>
+      </div>
     );
   }
 
   return (
-    <main className="bg-parchment px-6 py-20 sm:py-28">
+    <div className="bg-parchment px-6 py-20 sm:py-28">
       <div className="mx-auto max-w-2xl">
         <div className="text-center mb-12">
           <h1
@@ -120,7 +94,7 @@ function EnquireForm() {
           </h1>
           <p className="mt-4 text-lg text-stone">
             Tell us a little about yourself and the pilgrimage you have in mind.
-            We will come back to you with a personalised proposal.
+            Choose how you would like to travel and we will discuss the arrangements with you.
           </p>
         </div>
 
@@ -214,22 +188,38 @@ function EnquireForm() {
                 htmlFor="tourType"
                 className="block text-sm font-medium text-slate-deep mb-1.5"
               >
-                Tour type
+                Pilgrimage option
               </label>
               <select
                 id="tourType"
                 value={form.tourType}
+                aria-describedby="option-description"
                 onChange={(e) => updateField('tourType', e.target.value)}
                 className="w-full rounded-md border border-stone/20 bg-white px-4 py-3 text-slate-deep focus:border-forest focus:ring-1 focus:ring-forest outline-none"
               >
                 <option value="">No preference</option>
-                {tourTypeOptions.map((t) => (
-                  <option key={t} value={t}>
-                    {t}
+                {pilgrimageOptions.map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.name}
                   </option>
                 ))}
               </select>
             </div>
+          </div>
+
+          <div id="option-description" className="rounded-lg bg-card p-5 text-sm leading-relaxed" aria-live="polite">
+            {selectedOption ? (
+              <>
+                <p className="font-medium text-slate-deep">{selectedOption.name}</p>
+                <p className="mt-2">{selectedOption.description}</p>
+                <p className="mt-2">{selectedOption.support}</p>
+              </>
+            ) : (
+              <p>
+                Independent Pilgrimage is a route pack for a walk you arrange yourself.
+                Walk Light and Guided Pilgrimage include accommodation with breakfast and daily baggage transfers.
+              </p>
+            )}
           </div>
 
           {/* Preferred Dates */}
@@ -246,7 +236,7 @@ function EnquireForm() {
               value={form.dates}
               onChange={(e) => updateField('dates', e.target.value)}
               className="w-full rounded-md border border-stone/20 bg-white px-4 py-3 text-slate-deep placeholder:text-stone/50 focus:border-forest focus:ring-1 focus:ring-forest outline-none"
-              placeholder="e.g. September 2026, flexible"
+              placeholder="e.g. next spring, flexible"
             />
           </div>
 
@@ -314,7 +304,7 @@ function EnquireForm() {
           </div>
 
           {error && (
-            <p className="text-red-600 text-sm">{error}</p>
+            <p role="alert" className="text-red-600 text-sm">{error}</p>
           )}
 
           <button
@@ -326,14 +316,29 @@ function EnquireForm() {
           </button>
         </form>
       </div>
-    </main>
+    </div>
+  );
+}
+
+function EnquireWithParams() {
+  const searchParams = useSearchParams();
+  const routeParam = searchParams.get('route') ?? '';
+  const initialRoute = routeOptions.includes(routeParam) ? routeParam : '';
+  const initialType = getPilgrimageOption(searchParams.get('type'))?.id ?? '';
+
+  return (
+    <EnquireForm
+      key={`${initialRoute}:${initialType}`}
+      initialRoute={initialRoute}
+      initialType={initialType}
+    />
   );
 }
 
 export default function EnquirePage() {
   return (
-    <Suspense>
-      <EnquireForm />
+    <Suspense fallback={<p className="px-6 py-20 text-center">Loading enquiry form…</p>}>
+      <EnquireWithParams />
     </Suspense>
   );
 }

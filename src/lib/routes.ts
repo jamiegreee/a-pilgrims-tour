@@ -858,3 +858,13 @@ export const routes: Record<string, PilgrimRoute> = {
 };
 
 export const routeSlugs = Object.keys(routes);
+
+// The initial offer focuses on Britain. Overseas route articles remain accessible.
+export const ukRouteSlugs = [
+  'st-cuthberts-way',
+  'the-pilgrims-way',
+  'st-michaels-way',
+  'north-wales-pilgrims-way',
+  'st-hildas-way',
+  'the-saints-way',
+];

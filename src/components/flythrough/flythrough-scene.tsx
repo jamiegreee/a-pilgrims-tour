@@ -5,6 +5,7 @@ import Link from 'next/link';
 import * as THREE from 'three';
 import type { Flythrough } from '@/lib/flythroughs';
 import type { RouteStage } from '@/lib/routes';
+import { createPilgrim } from './pilgrim';
 
 interface TerrainMeta {
   west: number;
@@ -13,6 +14,8 @@ interface TerrainMeta {
   north: number;
   width: number;
   height: number;
+  /** Present when scripts/bake-imagery.py has produced a satellite texture. */
+  imagery?: { width: number; height: number; credit: string };
 }
 
 interface Props {
@@ -97,6 +100,7 @@ export default function FlythroughScene({ slug, routeName, flythrough, stages, c
   const [stageIdx, setStageIdx] = useState(0);
   const [placeIdx, setPlaceIdx] = useState(0);
   const [noteIdx, setNoteIdx] = useState<number | null>(null);
+  const [imageryCredit, setImageryCredit] = useState<string | null>(null);
   const [profile, setProfile] = useState<{ path: string; stageX: number[] } | null>(null);
 
   // Mutable animation state shared between React handlers and the render loop.
@@ -275,8 +279,60 @@ export default function FlythroughScene({ slug, routeName, flythrough, stages, c
       }
       terrainGeo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
       const terrainMat = new THREE.MeshLambertMaterial({ vertexColors: true });
-      scene.add(new THREE.Mesh(terrainGeo, terrainMat));
+      const terrainMesh = new THREE.Mesh(terrainGeo, terrainMat);
+      scene.add(terrainMesh);
       disposables.push(terrainGeo, terrainMat);
+
+      // Drape satellite imagery over the terrain once it arrives; the tinted mesh stands in until then.
+      if (meta.imagery) {
+        const uvs = new Float32Array(cols * rows * 2);
+        for (let r = 0; r < rows; r++) {
+          for (let c = 0; c < cols; c++) {
+            const v = r * cols + c;
+            uvs[v * 2] = (c * step) / (meta.width - 1);
+            uvs[v * 2 + 1] = 1 - (r * step) / (meta.height - 1);
+          }
+        }
+        terrainGeo.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+        const credit = meta.imagery.credit;
+        const img = new Image();
+        img.decoding = 'async';
+        img.onload = () => {
+          if (disposed || !renderer) return;
+          // Fade the image edges into the haze on a canvas, capped to what the GPU accepts.
+          const max = renderer.capabilities.maxTextureSize;
+          const scale = Math.min(1, max / img.width, max / img.height);
+          const canvas = document.createElement('canvas');
+          canvas.width = Math.round(img.width * scale);
+          canvas.height = Math.round(img.height * scale);
+          const ctx = canvas.getContext('2d');
+          if (!ctx) return;
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          const fw = canvas.width * 0.07;
+          const fh = canvas.height * 0.07;
+          const edges: [number, number, number, number, number, number, number, number][] = [
+            [0, 0, fw, 0, 0, 0, fw, canvas.height],
+            [canvas.width, 0, canvas.width - fw, 0, canvas.width - fw, 0, fw, canvas.height],
+            [0, 0, 0, fh, 0, 0, canvas.width, fh],
+            [0, canvas.height, 0, canvas.height - fh, 0, canvas.height - fh, canvas.width, fh],
+          ];
+          for (const [x0, y0, x1, y1, rx, ry, rw, rh] of edges) {
+            const g = ctx.createLinearGradient(x0, y0, x1, y1);
+            g.addColorStop(0, HAZE);
+            g.addColorStop(1, 'rgba(231, 223, 210, 0)');
+            ctx.fillStyle = g;
+            ctx.fillRect(rx, ry, rw, rh);
+          }
+          const texture = new THREE.CanvasTexture(canvas);
+          texture.colorSpace = THREE.SRGBColorSpace;
+          texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+          const imageryMat = new THREE.MeshLambertMaterial({ map: texture });
+          terrainMesh.material = imageryMat;
+          disposables.push(texture, imageryMat);
+          setImageryCredit(credit);
+        };
+        img.src = `/terrain/${terrain}.jpg`;
+      }
 
       // --- Route ---------------------------------------------------------------
       const flatCurve = new THREE.CatmullRomCurve3(
@@ -319,9 +375,11 @@ export default function FlythroughScene({ slug, routeName, flythrough, stages, c
       scene.add(new THREE.Mesh(ghostGeo, ghostMat));
       disposables.push(routeGeo, routeMat, ghostGeo, ghostMat);
 
-      const walkerGeo = new THREE.SphereGeometry(0.12, 20, 12);
-      const walkerMat = new THREE.MeshBasicMaterial({ color: '#ffffff' });
-      const walker = new THREE.Mesh(walkerGeo, walkerMat);
+      const walker = new THREE.Group();
+      const pilgrim = createPilgrim();
+      pilgrim.group.scale.setScalar(0.9);
+      walker.add(pilgrim.group);
+      disposables.push(pilgrim);
       const haloGeo = new THREE.RingGeometry(0.22, 0.32, 40);
       const haloMat = new THREE.MeshBasicMaterial({
         color: '#d9a441',
@@ -334,7 +392,7 @@ export default function FlythroughScene({ slug, routeName, flythrough, stages, c
       halo.rotation.x = -Math.PI / 2;
       walker.add(halo);
       scene.add(walker);
-      disposables.push(walkerGeo, walkerMat, haloGeo, haloMat);
+      disposables.push(haloGeo, haloMat);
 
       // Distance along the route for each waypoint (nearest sample, searched monotonically).
       const wpDist: number[] = [];
@@ -478,10 +536,10 @@ export default function FlythroughScene({ slug, routeName, flythrough, stages, c
         const d = s.progress * totalKm;
         const i = indexAt(d);
         const walkerPos = pts[i];
-        walker.position.copy(walkerPos).y += 0.1;
+        walker.position.copy(walkerPos).y -= 0.08;
         const pulse = 1 + Math.sin(now / 300) * 0.15;
         halo.scale.setScalar(pulse);
-        walker.scale.setScalar(1 + blend * 12);
+        walker.scale.setScalar(1 + blend * 6);
 
         routeGeo.setDrawRange(0, i * radial * 6);
 
@@ -491,6 +549,8 @@ export default function FlythroughScene({ slug, routeName, flythrough, stages, c
         const dir = tmp.copy(ahead).sub(back).setY(0);
         if (dir.lengthSq() < 1e-6) dir.set(-1, 0, 0);
         dir.normalize();
+        const walking = s.playing && s.phase === 'flying' && s.overview < 0.35;
+        pilgrim.update(walking ? dt * 7 * Math.min(s.speed, 2) : 0, dir, dt);
         followPos.copy(walkerPos).addScaledVector(dir, -CAMERA_BACK_KM);
         let floor = 0;
         for (let t = 0; t <= 1; t += 0.25) {
@@ -758,6 +818,11 @@ export default function FlythroughScene({ slug, routeName, flythrough, stages, c
                 {SPEEDS[speedIdx]}&times;
               </button>
             </div>
+            {imageryCredit && (
+              <p className="mt-1.5 text-right text-[10px] text-stone/80">
+                Imagery: {imageryCredit} &middot; Elevation: Mapzen Terrain Tiles
+              </p>
+            )}
           </div>
         </div>
       )}
@@ -797,6 +862,7 @@ export default function FlythroughScene({ slug, routeName, flythrough, stages, c
             </button>
             <p className="mt-4 text-[11px] text-stone/80">
               Elevation data: Mapzen Terrain Tiles (AWS Open Data). Heights exaggerated {exaggeration}&times;.
+              {imageryCredit && <> Imagery: {imageryCredit}.</>}
             </p>
           </div>
         </div>

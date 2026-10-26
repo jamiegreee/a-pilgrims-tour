@@ -20,10 +20,13 @@ from collections import defaultdict
 
 import numpy as np
 import rasterio
+import rasterio.errors
 from PIL import Image
 from rasterio.transform import from_bounds
 from rasterio.windows import Window, from_bounds as window_from_bounds
 from rasterio.warp import Resampling, reproject
+
+os.environ.setdefault("AWS_NO_SIGN_REQUEST", "YES")
 
 STAC = "https://earth-search.aws.element84.com/v1/search"
 
@@ -86,10 +89,15 @@ def main(slug):
         if w <= 0 or h <= 0:
             continue
         win_transform = rasterio.windows.transform(Window(col0, row0, w, h), dst_transform)
-        stack = []
-        for s in scenes[: cfg["per_tile"]]:
-            href = s["assets"]["visual"]["href"]
-            with rasterio.open(href) as src:
+        def read(s):
+            try:
+                return read_scene(s)
+            except rasterio.errors.RasterioIOError as err:
+                print(f"    skipped {s['id']}: {err}", flush=True)
+                return np.full((3, h, w), np.nan, dtype=np.float32)
+
+        def read_scene(s):
+            with rasterio.open(s["assets"]["visual"]["href"]) as src:
                 f = 8  # ~80 m source pixels, read from the COG overviews
                 data = src.read(out_shape=(3, src.height // f, src.width // f), resampling=Resampling.average)
                 transform = src.transform * src.transform.scale(src.width / data.shape[2], src.height / data.shape[1])
@@ -97,13 +105,26 @@ def main(slug):
                 reproject(data, out, src_transform=transform, src_crs=src.crs, src_nodata=0,
                           dst_transform=win_transform, dst_crs="EPSG:4326", dst_nodata=0,
                           resampling=Resampling.average)
-            stack.append(out)
             years.add(s["properties"]["datetime"][:4])
-        arr = np.stack(stack).astype(np.float32)
-        valid = arr.sum(axis=1, keepdims=True) > 0
-        arr[~np.repeat(valid, 3, axis=1)] = np.nan
+            arr = out.astype(np.float32)
+            arr[:, out.sum(axis=0) == 0] = np.nan
+            return arr
+
+        stack = [read(s) for s in scenes[: cfg["per_tile"]]]
         with np.errstate(all="ignore"):
-            med = np.nanmedian(arr, axis=0)
+            med = np.nanmedian(np.stack(stack), axis=0)
+        # Swath edges leave wedges no chosen pass covers; patch them from the next clearest passes.
+        # Square corners outside every swath stay empty, so stop once passes add little.
+        misses = 0
+        for s in scenes[cfg["per_tile"] : cfg["per_tile"] + 8]:
+            gaps = np.isnan(med[0])
+            extra = read(s)
+            filled = gaps & ~np.isnan(extra[0])
+            med[:, filled] = extra[:, filled]
+            stack.append(extra)
+            misses = misses + 1 if filled.mean() < 0.005 else 0
+            if misses == 2:
+                break
         region = mosaic[:, row0 : row0 + h, col0 : col0 + w]
         fill = ~np.isnan(med[0]) & (region.sum(axis=0) == 0)
         for b in range(3):

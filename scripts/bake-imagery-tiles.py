@@ -21,10 +21,16 @@ from collections import defaultdict
 
 import numpy as np
 import rasterio
+import rasterio._err
 import rasterio.errors
 from PIL import Image
 from rasterio.transform import from_bounds
 from rasterio.warp import Resampling, reproject, transform_bounds
+
+# Fail a stalled download instead of hanging a worker forever.
+os.environ.setdefault("GDAL_HTTP_TIMEOUT", "60")
+os.environ.setdefault("GDAL_HTTP_MAX_RETRY", "4")
+os.environ.setdefault("GDAL_HTTP_RETRY_DELAY", "2")
 
 _spec = importlib.util.spec_from_file_location("bake_imagery", os.path.join(os.path.dirname(__file__), "bake-imagery.py"))
 base = importlib.util.module_from_spec(_spec)
@@ -67,6 +73,11 @@ def bake_tile(t):
     cfg, items, out_dir = JOB["cfg"], JOB["items"], JOB["out_dir"]
     px = cfg["px"]
     years = set()
+    name = f"{t['col']}_{t['row']}.webp"
+    if os.path.exists(f"{out_dir}/{name}"):
+        # Already baked by an earlier, interrupted run.
+        t["file"] = name
+        return t, years, f"  {name}: kept existing"
     tb = t["bounds"]
     dst_transform = from_bounds(*tb, px, px)
     by_grid = defaultdict(list)
@@ -86,6 +97,8 @@ def bake_tile(t):
                 win = rasterio.windows.from_bounds(*sb, src.transform).intersection(
                     rasterio.windows.Window(0, 0, src.width, src.height)
                 ).round_offsets().round_lengths()
+                if win.width < 4 or win.height < 4:
+                    return None  # scene only grazes the tile
                 f = 2  # 20 m source pixels, from the first COG overview
                 shape = (3, max(1, int(win.height) // f), max(1, int(win.width) // f))
                 data = src.read(window=win, out_shape=shape, resampling=Resampling.average)
@@ -95,7 +108,7 @@ def bake_tile(t):
                 reproject(data, out, src_transform=transform, src_crs=src.crs, src_nodata=0,
                           dst_transform=dst_transform, dst_crs="EPSG:4326", dst_nodata=0,
                           resampling=Resampling.bilinear)
-        except (rasterio.errors.RasterioIOError, rasterio.errors.WindowError) as err:
+        except (rasterio.errors.RasterioError, rasterio.errors.WindowError, rasterio._err.CPLE_BaseError) as err:
             print(f"    skipped {s['id']}: {err}", flush=True)
             return None
         years.add(s["properties"]["datetime"][:4])
@@ -121,7 +134,6 @@ def bake_tile(t):
     rgb = np.nan_to_num(med.transpose(1, 2, 0))
     rgb = base.fill_gaps(rgb, empty) / 255
     rgb = np.clip(rgb * 1.35, 0, 1) ** 0.85  # same lift as the base texture so they match
-    name = f"{t['col']}_{t['row']}.webp"
     Image.fromarray((rgb * 255).astype(np.uint8)).save(f"{out_dir}/{name}", quality=72, method=5)
     t["file"] = name
     return t, years, f"  {name}: {len(stack)} scenes, {os.path.getsize(f'{out_dir}/{name}') // 1024} KB"

@@ -709,10 +709,16 @@ export default function FlythroughScene({ slug, routeName, flythrough, stages, c
           </Link>
           {phase === 'flying' && (
             <>
-              <p className="mt-3 text-xs font-medium uppercase tracking-widest text-slate-deep/70">
+              <p
+                className="mt-3 text-xs font-medium uppercase tracking-widest text-slate-deep/80"
+                style={{ textShadow: "0 0 8px rgba(245,240,235,0.9)" }}
+              >
                 {stage?.label} &middot; {stage?.name}
               </p>
-              <h1 className="mt-1 font-display text-3xl sm:text-4xl leading-tight text-slate-deep">
+              <h1
+                className="mt-1 font-display text-3xl sm:text-4xl leading-tight text-slate-deep"
+                style={{ textShadow: "0 0 12px rgba(245,240,235,0.9), 0 0 3px rgba(245,240,235,0.9)" }}
+              >
                 {place?.name}
               </h1>
             </>

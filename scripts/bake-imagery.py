@@ -58,6 +58,25 @@ def search(bbox, datetime, max_cloud):
     return items
 
 
+def fill_gaps(img, empty):
+    """Fill pixels no pass covered by repeatedly averaging their covered neighbours."""
+    img = img.astype(np.float32)
+    known = ~empty
+    for _ in range(400):
+        if known.all():
+            break
+        acc = np.zeros_like(img)
+        cnt = np.zeros(known.shape, dtype=np.float32)
+        for dy, dx in ((-1, 0), (1, 0), (0, -1), (0, 1), (-3, 0), (3, 0), (0, -3), (0, 3)):
+            k = np.roll(known, (dy, dx), axis=(0, 1))
+            acc += np.roll(img, (dy, dx), axis=(0, 1)) * k[..., None]
+            cnt += k
+        grow = ~known & (cnt > 0)
+        img[grow] = acc[grow] / cnt[grow][:, None]
+        known |= grow
+    return img
+
+
 def main(slug):
     cfg = IMAGERY[slug]
     meta = json.load(open(f"public/terrain/{slug}.json"))
@@ -132,7 +151,7 @@ def main(slug):
         print(f"  {code}: {len(stack)} scenes", flush=True)
 
     # Sentinel-2 true colour is dark and flat; lift it gently towards how the eye sees it.
-    img = mosaic.transpose(1, 2, 0).astype(np.float32) / 255
+    img = fill_gaps(mosaic.transpose(1, 2, 0), mosaic.sum(axis=0) == 0) / 255
     img = np.clip(img * 1.35, 0, 1) ** 0.85
     out = Image.fromarray((img * 255).astype(np.uint8))
     out.save(f"public/terrain/{slug}.jpg", quality=82, optimize=True, progressive=True)

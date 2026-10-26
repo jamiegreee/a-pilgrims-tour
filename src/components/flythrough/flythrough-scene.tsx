@@ -65,7 +65,9 @@ const ARRIVAL_SECONDS = 7;
 const DETAIL_ZOOM = 13;
 const LANDMARK_ZOOM = 15;
 const INTRO_SECONDS = 3;
-const SPEEDS = [1, 2, 4];
+// Playback speeds; 1x walks the whole route in FLIGHT_SECONDS.
+const SPEEDS = [0.25, 0.5, 1, 2, 4, 8];
+const DEFAULT_SPEED = SPEEDS.indexOf(1);
 
 const FOG_NEAR = 0.0009;
 const FOG_FOLLOW = 0.014;
@@ -109,6 +111,11 @@ function buildRamp(stops: [number, string][]) {
   };
 }
 
+function formatSpeed(speed: number) {
+  const label = speed === 0.25 ? '¼' : speed === 0.5 ? '½' : String(speed);
+  return `${label}×`;
+}
+
 function formatKm(km: number) {
   return Math.round(km).toLocaleString('en-GB');
 }
@@ -131,7 +138,7 @@ export default function FlythroughScene({
 
   const [phase, setPhase] = useState<Phase>('loading');
   const [playing, setPlaying] = useState(false);
-  const [speedIdx, setSpeedIdx] = useState(0);
+  const [speedIdx, setSpeedIdx] = useState(DEFAULT_SPEED);
   const [stageIdx, setStageIdx] = useState(0);
   const [placeIdx, setPlaceIdx] = useState(0);
   const [noteIdx, setNoteIdx] = useState<number | null>(null);
@@ -983,14 +990,22 @@ export default function FlythroughScene({
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.code !== 'Space' || (phase !== 'flying' && phase !== 'done')) return;
+      if (phase !== 'flying' && phase !== 'done') return;
+      // Slower / faster with - and + (or [ and ]).
+      if (['Minus', 'NumpadSubtract', 'BracketLeft'].includes(e.code)) {
+        setSpeedIdx((i) => Math.max(i - 1, 0));
+        return;
+      }
+      if (['Equal', 'NumpadAdd', 'BracketRight'].includes(e.code)) {
+        setSpeedIdx((i) => Math.min(i + 1, SPEEDS.length - 1));
+        return;
+      }
+      if (e.code !== 'Space') return;
       // Let focused buttons and links handle Space themselves.
       if (e.target instanceof HTMLElement && ['BUTTON', 'A'].includes(e.target.tagName)) return;
-      {
-        e.preventDefault();
-        if (phase === 'done') begin();
-        else setPlaying((p) => !p);
-      }
+      e.preventDefault();
+      if (phase === 'done') begin();
+      else setPlaying((p) => !p);
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -1127,14 +1142,35 @@ export default function FlythroughScene({
                   className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
                 />
               </div>
-              <button
-                type="button"
-                onClick={() => setSpeedIdx((s) => (s + 1) % SPEEDS.length)}
-                className="shrink-0 rounded-md border border-slate-deep/20 bg-white/70 px-2.5 py-1.5 text-xs font-medium tabular-nums text-slate-deep hover:bg-white"
-                aria-label="Change speed"
+              <div
+                className="flex shrink-0 items-center overflow-hidden rounded-md border border-slate-deep/20 bg-white/70 text-slate-deep"
+                role="group"
+                aria-label="Walking speed"
               >
-                {SPEEDS[speedIdx]}&times;
-              </button>
+                <button
+                  type="button"
+                  onClick={() => setSpeedIdx((i) => Math.max(i - 1, 0))}
+                  disabled={speedIdx === 0}
+                  className="px-2.5 py-1.5 text-sm leading-none hover:bg-white disabled:opacity-30 disabled:hover:bg-transparent"
+                  aria-label="Slower"
+                  title="Slower (−)"
+                >
+                  &minus;
+                </button>
+                <span className="min-w-[3.25rem] text-center text-xs font-medium tabular-nums" aria-live="polite">
+                  {formatSpeed(SPEEDS[speedIdx])}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setSpeedIdx((i) => Math.min(i + 1, SPEEDS.length - 1))}
+                  disabled={speedIdx === SPEEDS.length - 1}
+                  className="px-2.5 py-1.5 text-sm leading-none hover:bg-white disabled:opacity-30 disabled:hover:bg-transparent"
+                  aria-label="Faster"
+                  title="Faster (+)"
+                >
+                  +
+                </button>
+              </div>
             </div>
             {imageryCredit && (
               <p className="mt-1.5 text-right text-[10px] text-stone/80">

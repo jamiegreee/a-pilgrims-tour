@@ -1,124 +1,110 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
+import { PilgrimageOptions } from '@/components/pilgrimage-options';
 
 export const metadata: Metadata = {
   title: "How It Works — A Pilgrim's Tour",
   description:
-    'You choose the path. We take care of the rest. Learn how our self-guided pilgrimage planning works.',
+    'Compare Independent Pilgrimage, Walk Light and Guided Pilgrimage. Find out who books your accommodation, carries your bags and accompanies your walk.',
 };
 
 const steps = [
   {
     num: '01',
-    title: 'Choose your route',
+    title: 'Find your path',
     description:
-      'Start by exploring our four pilgrimage routes. Each has its own character — from the social energy of the Camino de Santiago to the forest solitude of the Kumano Kodo. Not sure which is right for you? Get in touch and we will help you decide based on your interests, fitness level, and the kind of experience you are looking for.',
+      'Explore our British pilgrimage routes and consider the distance, terrain and time you would like to spend walking. The places along the way, and what they mean to you, are part of choosing the right journey.',
     details: [
-      'Browse detailed route descriptions with day-by-day breakdowns',
-      'Compare distances, difficulty levels, and best travel seasons',
-      'Read about the history and spiritual traditions of each path',
-      'Talk to us — we have walked every route ourselves',
+      'Ask about daily distances, suggested stages and walking demands',
+      'Explore the history and sacred places along each path',
+      'Tell us your preferred dates, pace and room requirements when you enquire',
     ],
   },
   {
     num: '02',
-    title: 'We plan everything',
+    title: 'Choose how much we arrange',
     description:
-      'Once you have chosen your route, our team builds a fully personalised itinerary. We book your accommodation, arrange daily luggage transfers, prepare detailed walking notes, and set up local support so that if anything changes on the road, help is always a phone call away.',
+      'Choose an Independent Pilgrimage route pack if you want to make your own arrangements. With Walk Light, we book your accommodation with breakfast and arrange daily baggage transfers. Guided Pilgrimage adds an accompanying pilgrimage guide and the company of a small group.',
     details: [
-      'Hand-picked accommodation — private rooms in quality guesthouses, family hotels, and historic inns',
-      'Daily luggage transfers so you walk with only a daypack',
-      'Detailed route notes with maps, elevation profiles, and points of interest',
-      'Flexible scheduling — walk as far as you like each day, with options to shorten or extend stages',
-      '24/7 local support phone line for on-the-ground assistance',
+      'Independent Pilgrimage: you book your stays and carry your bags',
+      'Walk Light: we arrange the overnight stops and move your bags',
+      'Guided Pilgrimage: walk together with a guide and space for spiritual reflection',
     ],
   },
   {
     num: '03',
-    title: 'You walk',
+    title: 'Prepare for your journey',
     description:
-      'This is the part that matters. With the logistics handled, you are free to walk at your own pace, stop when something catches your eye, linger over a long lunch, or push on to the next village. There is no group to keep up with, no guide setting the pace. Just you, the path, and whatever you came to find.',
+      'We confirm the arrangements and what is included before you book. Your route information sets out the daily walking stages, practical details and places to pause. On a guided journey, you will also know the group itinerary and the spiritual approach of your guide.',
     details: [
-      'Walk at your own pace — there is no schedule to keep',
-      'Your bags arrive at each night\'s accommodation before you do',
-      'Eat where and when you like — our notes include local restaurant recommendations',
-      'Rest days built in where you want them',
-      'Complete independence with the safety net of professional support',
+      'Review your itinerary, inclusions and price before committing',
+      'Receive route notes, maps and GPX files for your walk',
+      'Check accommodation, baggage allowances and contact details for an arranged holiday',
     ],
   },
 ];
 
 const faqs = [
   {
-    question: 'Do I need to be fit?',
+    question: 'Do you book my accommodation?',
     answer:
-      'You need to be able to walk for several hours a day, but you do not need to be an athlete. Most of our pilgrims are regular walkers, not marathon runners. We tailor stage lengths to your fitness level and can build in rest days wherever you need them. The most important preparation is getting comfortable walking 15–20 km in a day with a light daypack, which most people can achieve with a few weeks of regular walking beforehand.',
+      'Yes, for Walk Light and Guided Pilgrimage. Accommodation with breakfast is included, and your proposal will set out the overnight stops and room arrangements. With Independent Pilgrimage, you choose and book your own accommodation.',
   },
   {
-    question: 'What if I need to change plans on the road?',
+    question: 'Who carries my bags?',
     answer:
-      'Plans change — we understand that completely. If you need to skip a stage, take an extra rest day, or adjust your route, call our local support line and we will rearrange accommodation and luggage transfers. There may be a small rebooking fee depending on notice, but we will always do our best to accommodate changes. Flexibility is built into our service.',
+      'With Independent Pilgrimage, you carry your own luggage. Walk Light and Guided Pilgrimage include daily baggage transfers between the agreed overnight stops, leaving you to carry what you need for the day. We confirm bag allowances and collection arrangements before booking.',
   },
   {
-    question: 'Can I walk with a partner or small group?',
+    question: 'What support is included?',
     answer:
-      'Absolutely. Many of our pilgrims walk with a partner, friend, or small group. We book shared or adjacent rooms and can tailor the itinerary to accommodate different fitness levels within the group — for example, offering a shorter alternative stage for one person while the other takes the full route. Pricing is per person, with discounts for groups of three or more.',
+      'Independent Pilgrimage is a route pack for a journey you manage yourself, without on-trip assistance. Walk Light includes a contact for accommodation and baggage arrangements; you navigate and walk independently. Guided Pilgrimage also includes a guide accompanying the walking group.',
   },
   {
-    question: 'How much does it cost?',
+    question: 'What does a pilgrimage guide do?',
     answer:
-      'Pricing depends on the route, the duration, the time of year, and the level of accommodation you prefer. As a guide, the Camino de Santiago (30–35 days) typically costs between £2,800 and £3,600 per person, while the shorter Kumano Kodo (5–7 days) ranges from £1,400 to £1,900. We provide a detailed, transparent quote after your initial enquiry — no hidden fees, no surprises.',
+      'Your guide leads the walking journey, shares local history and creates space for spiritual reflection, conversation and quiet. Each guided journey will explain its spiritual focus and any shared practices before you book, so you can choose an experience that suits you.',
+  },
+  {
+    question: 'How do I choose a suitable walk?',
+    answer:
+      'Consider the daily distances, terrain, ascent and the weight you will carry, alongside your experience of walking on consecutive days. Read the route details and tell us about your preferred pace when you enquire. On guided departures, the group follows a shared itinerary.',
+  },
+  {
+    question: 'How much does it cost, and when can I go?',
+    answer:
+      'Prices and availability depend on your route, dates and chosen option. For Walk Light and Guided Pilgrimage, room arrangements and group size also affect the price. Send an enquiry and we will confirm the proposed itinerary, inclusions, availability and price before you book.',
   },
 ];
 
 export default function HowItWorksPage() {
   return (
-    <main>
-      {/* Hero */}
-      <section className="bg-parchment px-6 py-28 sm:py-36 text-center">
+    <div>
+      <section className="bg-parchment px-6 py-24 sm:py-32 text-center">
         <div className="mx-auto max-w-3xl">
-          <h1
-            className="text-4xl sm:text-5xl text-slate-deep leading-tight"
-            style={{ fontFamily: 'var(--font-eb-garamond)' }}
-          >
-            You choose the path.
-            <br />
-            We take care of the rest.
+          <p className="text-sm font-medium uppercase tracking-widest text-ochre">How It Works</p>
+          <h1 className="mt-4 font-display text-4xl sm:text-5xl text-slate-deep leading-tight">
+            Choose your path.<br />Choose how you walk.
           </h1>
           <p className="mt-6 text-lg text-stone max-w-2xl mx-auto leading-relaxed">
-            A self-guided pilgrimage means total freedom with total support.
-            Here is exactly how it works.
+            A route pack for your own adventure, an arranged holiday with lighter
+            bags, or a shared journey with a pilgrimage guide.
           </p>
         </div>
       </section>
 
-      {/* Steps */}
-      <section className="bg-white px-6 py-24">
-        <div className="mx-auto max-w-4xl space-y-24">
+      <section className="bg-white px-6 py-20 sm:py-24">
+        <div className="mx-auto max-w-4xl space-y-16">
           {steps.map((step) => (
-            <div key={step.num} className="flex flex-col sm:flex-row gap-8 sm:gap-16">
-              <div className="shrink-0">
-                <span
-                  className="block text-7xl font-bold text-ochre/30"
-                  style={{ fontFamily: 'var(--font-eb-garamond)' }}
-                >
-                  {step.num}
-                </span>
-              </div>
+            <div key={step.num} className="flex flex-col sm:flex-row gap-6 sm:gap-12">
+              <span className="shrink-0 font-display text-6xl text-ochre/60" aria-hidden="true">{step.num}</span>
               <div>
-                <h2
-                  className="text-2xl sm:text-3xl text-slate-deep"
-                  style={{ fontFamily: 'var(--font-eb-garamond)' }}
-                >
-                  {step.title}
-                </h2>
-                <p className="mt-4 text-stone text-lg leading-relaxed">
-                  {step.description}
-                </p>
+                <h2 className="font-display text-2xl sm:text-3xl text-slate-deep">{step.title}</h2>
+                <p className="mt-4 text-stone text-lg leading-relaxed">{step.description}</p>
                 <ul className="mt-6 space-y-3">
                   {step.details.map((detail) => (
                     <li key={detail} className="flex items-start gap-3">
-                      <span className="mt-1.5 block h-1.5 w-1.5 shrink-0 rounded-full bg-forest" />
+                      <span className="mt-2 block h-1.5 w-1.5 shrink-0 rounded-full bg-forest" aria-hidden="true" />
                       <span className="text-stone leading-relaxed">{detail}</span>
                     </li>
                   ))}
@@ -129,60 +115,40 @@ export default function HowItWorksPage() {
         </div>
       </section>
 
-      {/* FAQ */}
-      <section className="bg-parchment px-6 py-24">
-        <div className="mx-auto max-w-3xl">
-          <div className="text-center mb-16">
-            <p className="text-sm font-medium uppercase tracking-widest text-ochre">
-              Common Questions
-            </p>
-            <h2
-              className="mt-3 text-3xl sm:text-4xl text-slate-deep"
-              style={{ fontFamily: 'var(--font-eb-garamond)' }}
-            >
-              Frequently Asked
-            </h2>
+      <section className="bg-parchment px-6 py-20 sm:py-24">
+        <div className="mx-auto max-w-6xl">
+          <div className="text-center mb-12">
+            <p className="text-sm font-medium uppercase tracking-widest text-ochre">Your Options</p>
+            <h2 className="mt-3 font-display text-3xl sm:text-4xl text-slate-deep">Three ways to make your pilgrimage</h2>
           </div>
+          <PilgrimageOptions />
+        </div>
+      </section>
 
-          <div className="space-y-10">
+      <section className="bg-white px-6 py-20 sm:py-24">
+        <div className="mx-auto max-w-3xl">
+          <div className="text-center mb-12">
+            <p className="text-sm font-medium uppercase tracking-widest text-ochre">Common Questions</p>
+            <h2 className="mt-3 font-display text-3xl sm:text-4xl text-slate-deep">Before you set out</h2>
+          </div>
+          <div className="divide-y divide-slate-deep/10">
             {faqs.map((faq) => (
-              <div key={faq.question}>
-                <h3
-                  className="text-xl text-slate-deep"
-                  style={{ fontFamily: 'var(--font-eb-garamond)' }}
-                >
-                  {faq.question}
-                </h3>
-                <p className="mt-3 text-stone leading-relaxed">
-                  {faq.answer}
-                </p>
+              <div key={faq.question} className="py-7 first:pt-0 last:pb-0">
+                <h3 className="font-display text-xl text-slate-deep">{faq.question}</h3>
+                <p className="mt-3 text-stone leading-relaxed">{faq.answer}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* CTA */}
       <section className="bg-forest px-6 py-20">
         <div className="mx-auto max-w-2xl text-center">
-          <h2
-            className="text-3xl sm:text-4xl text-white"
-            style={{ fontFamily: 'var(--font-eb-garamond)' }}
-          >
-            Still have questions?
-          </h2>
-          <p className="mt-4 text-white/80 text-lg">
-            We love talking about pilgrimage. Get in touch and we will help you
-            find the right path.
-          </p>
-          <Link
-            href="/enquire"
-            className="mt-8 inline-block bg-white text-forest px-8 py-3.5 rounded-md text-base font-medium hover:bg-parchment transition-colors"
-          >
-            Send an Enquiry
-          </Link>
+          <h2 className="font-display text-3xl sm:text-4xl text-white">Find the right journey for you.</h2>
+          <p className="mt-4 text-white/80 text-lg">Tell us where you would like to walk and how much you would like us to arrange.</p>
+          <Link href="/enquire" className="mt-8 inline-block bg-white text-forest px-8 py-3.5 rounded-md text-base font-medium hover:bg-parchment transition-colors">Send an Enquiry</Link>
         </div>
       </section>
-    </main>
+    </div>
   );
 }

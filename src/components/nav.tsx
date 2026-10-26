@@ -46,8 +46,10 @@ export function Nav() {
         <button
           type="button"
           onClick={() => setMenuOpen(!menuOpen)}
-          className="flex flex-col gap-1.5 md:hidden"
+          className="flex min-h-11 min-w-11 flex-col items-center justify-center gap-1.5 md:hidden"
           aria-label="Toggle menu"
+          aria-expanded={menuOpen}
+          aria-controls="mobile-menu"
         >
           <span
             className={`block h-0.5 w-6 bg-slate-deep transition-transform ${menuOpen ? "translate-y-2 rotate-45" : ""}`}
@@ -63,7 +65,7 @@ export function Nav() {
 
       {/* Mobile menu */}
       {menuOpen && (
-        <div className="border-t border-slate-deep/10 bg-parchment px-6 pb-6 pt-4 md:hidden">
+        <div id="mobile-menu" className="border-t border-slate-deep/10 bg-parchment px-6 pb-6 pt-4 md:hidden">
           <div className="flex flex-col gap-4">
             {navLinks.map((link) => (
               <Link

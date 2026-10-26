@@ -18,9 +18,9 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "A Pilgrim's Tour — Self-Guided Pilgrimage Planning",
+  title: "A Pilgrim's Tour — Pilgrimages in Britain",
   description:
-    "We plan the route, book the beds, and carry your bags. You walk, reflect, and arrive — at your own pace.",
+    "UK pilgrimages your way: an independent route pack, Walk Light with accommodation and baggage transfers, or a Guided Pilgrimage with spiritual reflection.",
 };
 
 export default function RootLayout({

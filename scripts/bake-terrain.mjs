@@ -20,6 +20,15 @@ const TERRAINS = {
     zoom: 9,
     width: 1024,
   },
+  'the-pilgrims-way': {
+    // Winchester (-1.31) to Canterbury (1.08), with margin for the overview camera.
+    west: -1.9,
+    east: 1.6,
+    south: 50.8,
+    north: 51.65,
+    zoom: 10,
+    width: 1024,
+  },
 };
 
 const TILE_URL = (z, x, y) =>

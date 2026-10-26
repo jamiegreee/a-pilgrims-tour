@@ -6,10 +6,5 @@
   "width": 1024,
   "height": 372,
   "min": -3413,
-  "max": 2746,
-  "imagery": {
-    "width": 4096,
-    "height": 1485,
-    "credit": "Contains modified Copernicus Sentinel data 2024"
-  }
+  "max": 2746
 }

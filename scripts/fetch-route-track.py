@@ -21,6 +21,8 @@ import urllib.request
 TRACKS = {
     # Stage relations of the "Camiño Francés" superroute (2163573), excluding its alternatives.
     "camino-de-santiago": [2163569, 2163558, 2163560, 2163561, 2163565, 2163559],
+    # St Swithun's Way (Winchester-Farnham), then the North Downs Way west, east and its Canterbury loop.
+    "the-pilgrims-way": [48741, 1957110, 8127, 4078375],
 }
 
 UA = {"User-Agent": "a-pilgrims-tour-flythrough/1.0 (route track builder)"}

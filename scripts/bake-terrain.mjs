@@ -29,6 +29,51 @@ const TERRAINS = {
     zoom: 10,
     width: 1024,
   },
+  'st-cuthberts-way': {
+    // Melrose (-2.72) to Lindisfarne (-1.80).
+    west: -3.0,
+    east: -1.55,
+    south: 55.38,
+    north: 55.8,
+    zoom: 10,
+    width: 1024,
+  },
+  'st-michaels-way': {
+    // Lelant to St Michael's Mount: a short crossing, so a finer grid.
+    west: -5.62,
+    east: -5.32,
+    south: 50.05,
+    north: 50.26,
+    zoom: 12,
+    width: 768,
+  },
+  'north-wales-pilgrims-way': {
+    // Basingwerk (-3.21) to Bardsey (-4.79).
+    west: -5.0,
+    east: -3.0,
+    south: 52.65,
+    north: 53.45,
+    zoom: 10,
+    width: 1024,
+  },
+  'st-hildas-way': {
+    // Hinderwell and Staithes (-0.79) to Whitby (-0.61).
+    west: -0.95,
+    east: -0.45,
+    south: 54.4,
+    north: 54.65,
+    zoom: 11,
+    width: 768,
+  },
+  'the-saints-way': {
+    // Padstow (50.54) to Fowey (50.34).
+    west: -5.1,
+    east: -4.48,
+    south: 50.24,
+    north: 50.63,
+    zoom: 11,
+    width: 1024,
+  },
 };
 
 const TILE_URL = (z, x, y) =>

@@ -2,7 +2,9 @@
 
 Downloads the route's stage relations, joins their ways into a graph, and walks the
 shortest path through the flythrough's waypoints in order, so detours and alternative
-branches that share the relations are left out. Writes public/terrain/<slug>-track.json
+branches that share the relations are left out. Where a route isn't mapped as a relation (or
+the relation has gaps), legs are routed along OpenStreetMap footpaths by the public OSRM foot
+router instead. Waypoints marked `offTrack` (an island reached by boat, say) are skipped. Writes public/terrain/<slug>-track.json
 as [[lat, lon], ...] simplified to ~8 m, plus its length in km.
 
 Map data © OpenStreetMap contributors, ODbL 1.0.
@@ -23,7 +25,21 @@ TRACKS = {
     "camino-de-santiago": [2163569, 2163558, 2163560, 2163561, 2163565, 2163559],
     # St Swithun's Way (Winchester-Farnham), then the North Downs Way west, east and its Canterbury loop.
     "the-pilgrims-way": [48741, 1957110, 8127, 4078375],
+    # Melrose to Kirk Yetholm, then Kirk Yetholm to Lindisfarne.
+    "st-cuthberts-way": [360996, 4515120],
+    "st-michaels-way": [17684067],
+    "the-saints-way": [2382950],
+    # Not mapped as a route: the Cleveland Way coast path (Staithes to Filey) past Hinderwell,
+    # with the first leg from Hinderwell church routed along footpaths.
+    "st-hildas-way": {"relations": [31112], "foot_legs": ["St Hilda\u2019s Church, Hinderwell"]},
+    # Mapped from Basingwerk to Llannefydd and in the hills above Llanfairfechan; routed along
+    # footpaths through the Conwy valley between them, and west of Llanfairfechan to Aberdaron.
+    "north-wales-pilgrims-way": {"relations": [5480035], "foot_from": "Llannefydd",
+                                 # The router won't take Llanrwst's bridge over the Conwy.
+                                 "straight_legs": ["Llanrwst"]},
 }
+
+FOOT_ROUTER = "https://routing.openstreetmap.de/routed-foot/route/v1/foot"
 
 UA = {"User-Agent": "a-pilgrims-tour-flythrough/1.0 (route track builder)"}
 
@@ -37,6 +53,22 @@ def fetch(rel):
             if attempt == 3:
                 raise
             time.sleep(2 ** attempt)
+
+
+def foot_route(a, b):
+    """Footpath route between two (lat, lon) points, or None if the router finds none."""
+    url = f"{FOOT_ROUTER}/{a[1]},{a[0]};{b[1]},{b[0]}?overview=full&geometries=geojson"
+    for attempt in range(4):
+        try:
+            data = json.load(urllib.request.urlopen(urllib.request.Request(url, headers=UA), timeout=120))
+            break
+        except Exception:
+            if attempt == 3:
+                return None
+            time.sleep(2 ** attempt)
+    if data.get("code") != "Ok":
+        return None
+    return [(la, lo) for lo, la in data["routes"][0]["geometry"]["coordinates"]]
 
 
 def haversine(a, b):
@@ -71,15 +103,26 @@ def simplify(pts, tol_km):
 
 
 def waypoints(slug):
+    """(name, (lat, lon)) for each on-track waypoint of the route, in order."""
     src = open("src/lib/flythroughs.ts").read()
     block = src[src.index(f"'{slug}'"):]
-    block = block[: block.index("],")]
-    return [(float(a), float(b)) for a, b in re.findall(r"lat: ([-\d.]+), lon: ([-\d.]+)", block)]
+    block = block[block.index("waypoints:"):]
+    block = block[: block.index("\n    ],")]
+    out = []
+    for obj in re.findall(r"\{ name: [^\n]*\}", block):
+        if "offTrack: true" in obj:
+            continue
+        name = re.search(r"name: '((?:[^'\\]|\\.)*)'", obj).group(1)
+        name = re.sub(r"\\u([0-9a-fA-F]{4})", lambda m: chr(int(m.group(1), 16)), name)
+        lat, lon = re.search(r"lat: ([-\d.]+), lon: ([-\d.]+)", obj).groups()
+        out.append((name, (float(lat), float(lon))))
+    return out
 
 
 def main(slug):
+    cfg = TRACKS[slug] if isinstance(TRACKS[slug], dict) else {"relations": TRACKS[slug]}
     nodes, adj = {}, {}
-    for rel in TRACKS[slug]:
+    for rel in cfg["relations"]:
         elements = fetch(rel)
         for e in elements:
             if e["type"] == "node":
@@ -118,23 +161,39 @@ def main(slug):
             path.append(prev[path[-1]])
         return path[::-1]
 
-    wps = waypoints(slug)
+    named = waypoints(slug)
+    names = [n for n, _ in named]
+    wps = [p for _, p in named]
+    foot_from = names.index(cfg["foot_from"]) if "foot_from" in cfg else len(wps)
+    foot_legs = {names.index(n) for n in cfg.get("foot_legs", [])} | set(range(foot_from, len(wps)))
     snapped = [nearest(p) for p in wps]
-    for p, n in zip(wps, snapped):
+    for i, (p, n) in enumerate(zip(wps, snapped)):
         off = haversine(p, nodes[n])
-        if off > 1.5:
-            print(f"  warning: waypoint {p} is {off:.1f} km from the track", flush=True)
+        if off > 1.5 and i not in foot_legs and i - 1 not in foot_legs:
+            print(f"  warning: {names[i]} is {off:.1f} km from the track", flush=True)
 
-    track = [snapped[0]]
-    for a, b in zip(snapped, snapped[1:]):
-        seg = shortest(a, b)
+    # Each leg starts where the last one ended. Foot-routed legs use the waypoints themselves.
+    def at(i):
+        return wps[i] if i in foot_legs or i - 1 in foot_legs else nodes[snapped[i]]
+
+    pts = [at(0)]
+    for i in range(len(wps) - 1):
+        seg = None
+        if i not in foot_legs:
+            path = shortest(snapped[i], snapped[i + 1])
+            if path is not None:
+                seg = [nodes[n] for n in path]
+            else:
+                print(f"  gap in the relation between {names[i]} and {names[i + 1]}: routing on footpaths", flush=True)
+        if seg is None and names[i] in cfg.get("straight_legs", []):
+            seg = [at(i), at(i + 1)]
         if seg is None:
-            # A gap in the mapped relation: bridge it with a straight line.
-            print(f"  gap between {nodes[a]} and {nodes[b]}, bridging", flush=True)
-            seg = [a, b]
-        track += seg[1:]
+            seg = foot_route(at(i), at(i + 1))
+            if seg is None:
+                print(f"  no footpath route between {names[i]} and {names[i + 1]}: straight line", flush=True)
+                seg = [at(i), at(i + 1)]
+        pts += seg[1:] if haversine(pts[-1], seg[0]) < 0.05 else seg
 
-    pts = [nodes[n] for n in track]
     length = sum(haversine(p, q) for p, q in zip(pts, pts[1:]))
     pts = simplify(pts, 0.008)
     out = {

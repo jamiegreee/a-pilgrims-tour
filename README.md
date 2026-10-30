@@ -64,16 +64,16 @@ viewer's plan doesn't include.
 
 | Variable | What it does |
 | --- | --- |
-| `NEXT_PUBLIC_ARCGIS_API_KEY` | Optional. An [ArcGIS Location Platform](https://location.arcgis.com) key enables Esri World Imagery (30–50 cm) for British routes. The free tier covers 2,000,000 basemap tiles a month; leave pay-as-you-go off and Esri stops serving rather than charging. Restrict the key to the site's domain. Without a key, the free Sentinel-2 tiles in `public/tiles` are used. |
+| `NEXT_PUBLIC_ARCGIS_API_KEY` | Optional. An [ArcGIS Location Platform](https://location.arcgis.com) key enables Esri World Imagery (30–50 cm) for British routes. The free tier covers 2,000,000 basemap tiles a month; leave pay-as-you-go off and Esri stops serving rather than charging. Restrict the key to the site's domain. Without a key, routes with `bakedTiles` use the free Sentinel-2 tiles in `public/tiles` (only the Pilgrims' Way so far); the others show shaded relief. |
 | `NEXT_PUBLIC_FLYTHROUGH_TILE_BASE` | Optional. Where the baked tiles are served from (default `/tiles`). Set it to a Cloudflare R2 bucket after running `scripts/upload-tiles-r2.sh`. |
 
 Spanish routes use Spain's PNOA and France's IGN aerial photography, which are free with credit and need no key.
 
 ### Adding a route
 
-1. Add waypoints, stages and imagery for the slug in `src/lib/flythroughs.ts`, and its OpenStreetMap route relations in `scripts/fetch-route-track.py`.
+1. Add waypoints, stages and imagery for the slug in `src/lib/flythroughs.ts`, and its OpenStreetMap route relations in `scripts/fetch-route-track.py`. Where the route isn't mapped as a relation, list the legs to route along footpaths instead (`foot_from`, `foot_legs`).
 2. `python3 scripts/fetch-route-track.py <slug>`: the walking track from OpenStreetMap.
 3. `node scripts/bake-terrain.mjs <slug>` (add a bounding box first): a coarse heightfield for the camera and the elevation profile.
-4. For British routes: `python3 scripts/bake-imagery-xyz.py <slug>` (needs `rasterio`, `numpy`, `pillow`): the free satellite tiles.
+4. Optional, for British routes: `python3 scripts/bake-imagery-xyz.py <slug>` (needs `rasterio`, `numpy`, `pillow`) bakes free satellite tiles for when there's no Esri key; then set `bakedTiles: true`.
 
 `npm run dev` and `npm run build` copy MapLibre's worker into `public/maplibre` first (`scripts/copy-maplibre-worker.mjs`).

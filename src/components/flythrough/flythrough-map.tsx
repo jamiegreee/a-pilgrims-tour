@@ -134,7 +134,7 @@ function buildStyle(
     sources.pnoa = { type: 'raster', tiles: [PNOA], tileSize: 256, maxzoom: 19, bounds: [-9.9, 35.0, 4.6, 43.9] };
     sources['ign-fr'] = { type: 'raster', tiles: [IGN_FRANCE], tileSize: 256, maxzoom: 19, bounds: [-1.42, 43.075, -0.9, 43.5] };
     layers.push({ id: 'pnoa', type: 'raster', source: 'pnoa' }, { id: 'ign-fr', type: 'raster', source: 'ign-fr' });
-  } else if (!arcgisKey) {
+  } else if (!arcgisKey && flythrough.bakedTiles) {
     // The whole region to zoom 11, and sharper zooms only near the track: two sources, so
     // where the sharp tiles stop the region layer shows through instead of a gap.
     const tiles = [`${tileBase}/${slug}/{z}/{x}/{y}.webp`];
@@ -145,7 +145,10 @@ function buildStyle(
       { id: 'sentinel-region', type: 'raster', source: 'sentinel-region' },
       { id: 'sentinel-route', type: 'raster', source: 'sentinel-route', minzoom: 11.5 },
     );
-    // Calm water over the sea, where passes from different days don't match.
+  }
+  if (flythrough.imagery === 'britain' && !arcgisKey) {
+    // Calm water over the sea, where Sentinel passes from different days don't match (and, with
+    // no imagery at all, to show the coast).
     layers.push({
       id: 'water',
       type: 'fill',
@@ -273,10 +276,12 @@ export default function FlythroughMap({
 
   const { waypoints, exaggeration, terrain } = flythrough;
   const credits = [
-    flythrough.imagery === 'iberia' ? CREDITS.iberia : arcgisKey ? CREDITS.esri : CREDITS.sentinel,
+    flythrough.imagery === 'iberia' ? CREDITS.iberia : arcgisKey ? CREDITS.esri : flythrough.bakedTiles ? CREDITS.sentinel : null,
     `Elevation: ${flythrough.terrainCredit}`,
     CREDITS.map,
-  ].join(' · ');
+  ]
+    .filter(Boolean)
+    .join(' · ');
 
   useEffect(() => {
     sim.current.playing = playing;

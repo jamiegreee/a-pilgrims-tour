@@ -29,9 +29,9 @@ TRACKS = {
     "st-cuthberts-way": [360996, 4515120],
     "st-michaels-way": [17684067],
     "the-saints-way": [2382950],
-    # Not mapped as a route: the Cleveland Way coast path (Staithes to Filey) past Hinderwell,
-    # with the first leg from Hinderwell church routed along footpaths.
-    "st-hildas-way": {"relations": [31112], "foot_legs": ["St Hilda\u2019s Church, Hinderwell"]},
+    # Not mapped in OpenStreetMap: routed along footpaths from Hinderwell through the Esk
+    # valley to Whitby, through the places the route's guides list.
+    "st-hildas-way": {"relations": [], "foot_from": "St Hilda\u2019s Church, Hinderwell"},
     # Mapped from Basingwerk to Llannefydd and in the hills above Llanfairfechan; routed along
     # footpaths through the Conwy valley between them, and west of Llanfairfechan to Aberdaron.
     "north-wales-pilgrims-way": {"relations": [5480035], "foot_from": "Llannefydd",
@@ -102,6 +102,19 @@ def simplify(pts, tol_km):
     return [p for p, f in zip(pts, keep) if f]
 
 
+def drop_spurs(pts, joins, max_km=0.8):
+    """Cut short out-and-back detours at the waypoints: routing to a waypoint just off the
+    path and back retraces the same points either side of it, so remove that stretch."""
+    cut = set()
+    for i in joins:
+        k = 0
+        while 0 <= i - k - 1 and i + k + 1 < len(pts) and pts[i - k - 1] == pts[i + k + 1]:
+            k += 1
+        if k and sum(haversine(p, q) for p, q in zip(pts[i - k:i], pts[i - k + 1:i + 1])) < max_km:
+            cut.update(range(i - k + 1, i + k + 1))
+    return [p for n, p in enumerate(pts) if n not in cut]
+
+
 def waypoints(slug):
     """(name, (lat, lon)) for each on-track waypoint of the route, in order."""
     src = open("src/lib/flythroughs.ts").read()
@@ -166,8 +179,10 @@ def main(slug):
     wps = [p for _, p in named]
     foot_from = names.index(cfg["foot_from"]) if "foot_from" in cfg else len(wps)
     foot_legs = {names.index(n) for n in cfg.get("foot_legs", [])} | set(range(foot_from, len(wps)))
-    snapped = [nearest(p) for p in wps]
+    snapped = [nearest(p) if graph_nodes else None for p in wps]
     for i, (p, n) in enumerate(zip(wps, snapped)):
+        if n is None:
+            continue
         off = haversine(p, nodes[n])
         if off > 1.5 and i not in foot_legs and i - 1 not in foot_legs:
             print(f"  warning: {names[i]} is {off:.1f} km from the track", flush=True)
@@ -177,6 +192,7 @@ def main(slug):
         return wps[i] if i in foot_legs or i - 1 in foot_legs else nodes[snapped[i]]
 
     pts = [at(0)]
+    joins = []  # where each leg ends, at a waypoint
     for i in range(len(wps) - 1):
         seg = None
         if i not in foot_legs:
@@ -193,7 +209,9 @@ def main(slug):
                 print(f"  no footpath route between {names[i]} and {names[i + 1]}: straight line", flush=True)
                 seg = [at(i), at(i + 1)]
         pts += seg[1:] if haversine(pts[-1], seg[0]) < 0.05 else seg
+        joins.append(len(pts) - 1)
 
+    pts = drop_spurs(pts, joins)
     length = sum(haversine(p, q) for p, q in zip(pts, pts[1:]))
     pts = simplify(pts, 0.008)
     out = {

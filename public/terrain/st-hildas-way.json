@@ -1,10 +1,10 @@
 {
-  "west": -0.95,
+  "west": -1.1,
   "east": -0.45,
-  "south": 54.4,
-  "north": 54.65,
+  "south": 54.36,
+  "north": 54.62,
   "width": 768,
-  "height": 662,
+  "height": 529,
   "min": -52,
-  "max": 431
+  "max": 450
 }

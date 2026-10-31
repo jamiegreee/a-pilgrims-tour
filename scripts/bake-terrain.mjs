@@ -57,11 +57,11 @@ const TERRAINS = {
     width: 1024,
   },
   'st-hildas-way': {
-    // Hinderwell and Staithes (-0.79) to Whitby (-0.61).
-    west: -0.95,
+    // Hinderwell (-0.78) inland to Danby (-0.93), then down the Esk to Whitby (-0.61).
+    west: -1.1,
     east: -0.45,
-    south: 54.4,
-    north: 54.65,
+    south: 54.36,
+    north: 54.62,
     zoom: 11,
     width: 768,
   },

@@ -342,31 +342,31 @@ export const routes: Record<string, PilgrimRoute> = {
         label: 'Day 1',
         name: 'Melrose to Maxton',
         desc: 'Begin at Melrose Abbey, where Cuthbert first became a monk. Follow the River Tweed east through rich farmland and the ruins of Dryburgh Abbey.',
-        km: '~21 km',
+        km: '~16 km',
       },
       {
         label: 'Day 2',
         name: 'Maxton to Morebattle',
         desc: 'Leave the Tweed valley and climb into the Kale Water valley. Open moorland and forest tracks lead through the rolling Scottish Borders to the quiet village of Morebattle.',
-        km: '~23 km',
+        km: '~27 km',
       },
       {
         label: 'Day 3',
         name: 'Morebattle to Kirk Yetholm',
         desc: 'Cross into the Kale valley and climb through heather moorland to the edge of the Cheviots. Kirk Yetholm, the famous end point of the Pennine Way, marks the Scottish border.',
-        km: '~18 km',
+        km: '~11 km',
       },
       {
         label: 'Day 4',
         name: 'Kirk Yetholm to Wooler',
-        desc: "Cross the English border into Northumberland. Pass St Cuthbert\u2019s Cave \u2014 a natural sandstone shelter used by monks carrying Cuthbert\u2019s relics \u2014 and descend to Wooler.",
-        km: '~22 km',
+        desc: "Cross the English border into Northumberland over the shoulder of the Cheviots, follow the College Valley past Hethpool, and descend to the market town of Wooler.",
+        km: '~21 km',
       },
       {
         label: 'Day 5',
         name: 'Wooler to Lindisfarne',
-        desc: 'The final stretch across Northumbrian farmland to the coast, culminating in a tidal causeway crossing to Holy Island. Time the tide. The priory and castle await.',
-        km: '~16 km',
+        desc: 'Cross Northumbrian farmland past St Cuthbert\u2019s Cave, a sandstone shelter where by tradition the monks carrying Cuthbert\u2019s body rested, to the coast and the tidal causeway crossing to Holy Island. Time the tide. The priory and castle await.',
+        km: '~28 km',
       },
     ],
     inclusions: {
@@ -533,14 +533,14 @@ export const routes: Record<string, PilgrimRoute> = {
       {
         label: 'Part 1',
         name: 'Lelant to Ludgvan',
-        desc: "Start at Lelant church \u2014 a place of pilgrimage since the 5th century \u2014 and cross Hayle Estuary. Climb over Trencrom Hill with its Iron Age hillfort and sweeping views from both coasts, then descend through farmland to the village of Ludgvan.",
-        km: '~11 km',
+        desc: "Start at Lelant church \u2014 a place of pilgrimage since the 5th century \u2014 and follow the coast path above the Hayle estuary to Carbis Bay, then turn inland past Knill\u2019s Steeple. Climb over Trencrom Hill with its Iron Age hillfort and sweeping views from both coasts, then descend through farmland to the village of Ludgvan.",
+        km: '~13 km',
       },
       {
         label: 'Part 2',
         name: "Ludgvan to St Michael\u2019s Mount",
-        desc: "Through the ancient village of Marazion \u2014 the oldest chartered town in Britain \u2014 to the shore of Mount\u2019s Bay. Cross the tidal cobblestone causeway to St Michael\u2019s Mount when the tide is low, arriving at the castle that has welcomed pilgrims for a thousand years.",
-        km: '~9 km',
+        desc: "West to Gulval church, then back along the shore of Mount\u2019s Bay to the ancient town of Marazion \u2014 one of the oldest chartered towns in Britain. Cross the tidal cobblestone causeway to St Michael\u2019s Mount when the tide is low, arriving at the castle that has welcomed pilgrims for a thousand years.",
+        km: '~7 km',
       },
     ],
     inclusions: {
@@ -610,15 +610,15 @@ export const routes: Record<string, PilgrimRoute> = {
     stages: [
       {
         label: 'Days 1\u20132',
-        name: 'Holywell to Bodfari',
-        desc: "Begin at St Winefride\u2019s Well \u2014 a pilgrimage site continuously visited since the 7th century, known as the \u2018Lourdes of Wales.\u2019 Follow ancient lanes west toward the Vale of Clwyd and the market town of Denbigh.",
-        km: '~45 km',
+        name: 'Holywell to Llangernyw',
+        desc: "Begin at Basingwerk Abbey and St Winefride\u2019s Well \u2014 a pilgrimage site continuously visited since the 7th century, known as the \u2018Lourdes of Wales.\u2019 Follow ancient lanes west through Pantasaph and Trelawnyd to St Asaph\u2019s small cathedral, then into the hills to Llangernyw and its ancient churchyard yew.",
+        km: '~48 km',
       },
       {
         label: 'Days 3\u20136',
-        name: 'Bodfari to Clynnog Fawr',
-        desc: "Cross the foothills of the Clwydian Range and enter Snowdonia\u2019s eastern approaches. The route passes a succession of ancient Welsh churches \u2014 many with holy wells \u2014 before arriving at Clynnog Fawr, a major medieval pilgrimage church in the Ll\u0177n Peninsula.",
-        km: '~80 km',
+        name: 'Llangernyw to Clynnog Fawr',
+        desc: "On to Gwytherin, where St Winefride was buried, and down to the Conwy at Llanrwst. Climb into the hills on Snowdonia\u2019s northern edge, past the remote old church at Llangelynnin, to Bangor Cathedral, then follow the coast to Clynnog Fawr, a major medieval pilgrimage church at the gateway to the Ll\u0177n Peninsula.",
+        km: '~88 km',
       },
       {
         label: 'Days 7\u20139',
@@ -685,8 +685,8 @@ export const routes: Record<string, PilgrimRoute> = {
   'st-hildas-way': {
     name: "St Hilda\u2019s Way",
     country: 'North Yorkshire, England',
-    distance: '65 km',
-    duration: '3\u20134 days',
+    distance: '69 km',
+    duration: '4 days',
     difficulty: 'Moderate',
     bestMonths: 'April \u2013 October',
     startPoint: 'Hinderwell',
@@ -696,40 +696,40 @@ export const routes: Record<string, PilgrimRoute> = {
     shortDescription:
       'From the North York Moors to the clifftop ruins of Whitby Abbey, following the landscape shaped by Hilda in 657 AD.',
     intro:
-      'St Hilda of Whitby was one of the most influential figures of early English Christianity \u2014 an abbess, scholar and diplomat who presided over the Synod of Whitby in 664 AD, where the course of English Christian practice was decided. This route follows the landscape she shaped, from the moorland villages of the North Yorkshire coast to the clifftop ruins of her great monastery.',
+      'St Hilda of Whitby was one of the most influential figures of early English Christianity \u2014 an abbess, scholar and diplomat who presided over the Synod of Whitby in 664 AD, where the course of English Christian practice was decided. This route, opened in 2015, links churches dedicated to her across the North York Moors, from the holy well at Hinderwell to the clifftop ruins of her great monastery.',
     body:
-      'The walking is spectacular: heather moorland, dramatic coastal villages like Runswick Bay and Sandsend, and a final approach to Whitby along the clifftops with the Abbey silhouetted against the sky. At three to four days, this is an ideal mid-length route \u2014 long enough to feel like a genuine pilgrimage, short enough for those new to walking holidays or with limited time.',
+      'The walking is varied: field paths and woods inland from the coast, the edge of the moors at Scaling Dam, and then the green Esk valley, past the packhorse bridge at Glaisdale, down to the sea at Whitby. The route links churches dedicated to St Hilda at Hinderwell, Danby, Egton and Sneaton before the final climb up the 199 steps to the Abbey. Four days of moderate walking, with some climbs.',
     stages: [
       {
         label: 'Day 1',
-        name: 'Hinderwell to Staithes',
-        desc: "Begin at Hinderwell\u2019s ancient church \u2014 dedicated to St Hilda \u2014 and descend through the deeply-cut valley to Staithes, one of the most picturesque fishing villages on the Yorkshire coast. Captain Cook lived here as a boy.",
-        km: '~16 km',
+        name: 'Hinderwell to Danby',
+        desc: "Begin at St Hilda\u2019s Church in Hinderwell, whose holy well is linked to Hilda herself. Field paths and woods lead inland past Scaling Dam reservoir and over the edge of the North York Moors to Danby, and its church of St Hilda in the dale.",
+        km: '~26 km',
       },
       {
         label: 'Day 2',
-        name: 'Staithes to Runswick Bay',
-        desc: 'Follow the Cleveland Way coastal path south, climbing in and out of dramatic coves. Runswick Bay is one of the finest beaches on the North Yorkshire coast \u2014 a tangle of red-roofed cottages tumbling down to the sand.',
+        name: 'Danby to Egton Bridge',
+        desc: "Follow the River Esk down its valley through Lealholm and Glaisdale, crossing Beggar\u2019s Bridge, a packhorse bridge of 1619, to the village of Egton Bridge.",
         km: '~16 km',
       },
       {
         label: 'Day 3',
-        name: 'Runswick Bay to Sandsend',
-        desc: "Cross the moorland plateau above the coast, passing the ruins of Goldsborough signal station and descending to the long sandy beach at Sandsend \u2014 with Whitby\u2019s rooftops and Abbey now visible in the distance.",
-        km: '~14 km',
+        name: 'Egton Bridge to Sleights',
+        desc: "Climb to St Hilda\u2019s Church at Egton, then follow woods and field paths along the valley side to Sleights.",
+        km: '~9 km',
       },
       {
         label: 'Day 4',
-        name: 'Sandsend to Whitby Abbey',
-        desc: "Walk the beach into Whitby, cross the swing bridge over the Esk, and climb the famous 199 steps to the clifftop. Whitby Abbey\u2019s skeletal Gothic ruins stand against the sky \u2014 the dramatic, unmistakable end to the pilgrimage.",
-        km: '~17 km',
+        name: 'Sleights to Whitby Abbey',
+        desc: "Pass St Hilda\u2019s Church at Sneaton and cross the Esk on the old railway viaduct at Larpool into Whitby. Cross the swing bridge and climb the famous 199 steps to the clifftop, where Whitby Abbey\u2019s Gothic ruins mark the end of the pilgrimage.",
+        km: '~8 km',
       },
     ],
     inclusions: {
       included: [
-        'Hand-picked B&Bs and inns in coastal villages (private rooms)',
+        'Hand-picked B&Bs and inns in moorland and valley villages (private rooms)',
         'Daily luggage transfers between accommodations',
-        'Detailed route notes with OS maps and coastal path guidance',
+        'Detailed route notes with OS maps',
         "Guide to St Hilda\u2019s life and the Synod of Whitby",
         '24/7 local support line throughout',
         'Yorkshire seafood and restaurant guide',
@@ -743,11 +743,11 @@ export const routes: Record<string, PilgrimRoute> = {
       ],
     },
     selfGuidedDesc:
-      'Walk at your own pace along one of England\u2019s finest coastal routes. Start any day that suits.',
+      'Walk at your own pace through the North York Moors and the Esk valley. Start any day that suits.',
     selfGuidedInclusions: [
-      'Hand-picked B&Bs and inns in coastal villages (private rooms)',
+      'Hand-picked B&Bs and inns in moorland and valley villages (private rooms)',
       'Daily luggage transfers between accommodations',
-      'Detailed route notes with OS maps and coastal path guidance',
+      'Detailed route notes with OS maps',
       "Guide to St Hilda\u2019s life and the Synod of Whitby",
       '24/7 local support line throughout',
       'Yorkshire seafood and restaurant guide',
@@ -767,7 +767,7 @@ export const routes: Record<string, PilgrimRoute> = {
     groupMaxWalkers: 12,
     cta: {
       heading: 'Walk to Whitby Abbey your way.',
-      body: "Three to four days along one of England\u2019s finest coastal walking routes. We\u2019ll handle everything from Hinderwell to the 199 steps.",
+      body: "Four days from Hinderwell through the Esk valley to Whitby. We\u2019ll handle everything from the holy well to the 199 steps.",
       button: "Enquire about St Hilda\u2019s Way",
     },
   },
@@ -788,25 +788,25 @@ export const routes: Record<string, PilgrimRoute> = {
     intro:
       "Long before the Saints\u2019 Way was walked by modern pilgrims, Celtic saints \u2014 Petroc, Samson, Fimbarrus \u2014 used this cross-peninsula route to avoid the treacherous seas around Land\u2019s End. Irish and Welsh missionaries travelling to Brittany crossed Cornwall here, leaving behind a trail of ancient churches, holy wells and carved granite crosses that still stand today.",
     body:
-      "The route connects Padstow \u2014 one of Cornwall\u2019s most celebrated fishing ports \u2014 with Fowey, a town whose literary and maritime history rivals anywhere in England. Between them: Helman Tor\u2019s Bronze Age landscape, the Luxulyan Valley\u2019s UNESCO World Heritage Site, and a remarkable sequence of medieval Cornish churches. Two to three days of accessible walking through the Cornish interior. Pairs beautifully with St Michael\u2019s Way for a longer Cornish pilgrimage experience.",
+      "The route connects Padstow \u2014 one of Cornwall\u2019s most celebrated fishing ports \u2014 with Fowey, a town whose literary and maritime history rivals anywhere in England. Between them: Helman Tor\u2019s Neolithic enclosure, the Luxulyan Valley\u2019s UNESCO World Heritage Site, and a remarkable sequence of medieval Cornish churches. Two to three days of accessible walking through the Cornish interior. Pairs beautifully with St Michael\u2019s Way for a longer Cornish pilgrimage experience.",
     stages: [
       {
         label: 'Day 1',
         name: 'Padstow to Lanivet',
-        desc: "Start at St Petroc\u2019s Church in Padstow \u2014 founded by the Celtic saint who arrived from Wales in the 6th century and whose relics were revered across Cornwall and Brittany. Follow the Camel Trail east before heading south through Little Petherick to Lanivet, a village named after the Old Cornish word for shrine.",
-        km: '~17 km',
+        desc: "Start at St Petroc\u2019s Church in Padstow \u2014 founded by the Celtic saint who arrived from Wales in the 6th century and whose relics were revered across Cornwall and Brittany. Follow the creek south to Little Petherick, then climb onto St Breock Downs, past Cornwall\u2019s largest standing stone, and on to Lanivet, a village named after the Old Cornish word for shrine.",
+        km: '~23 km',
       },
       {
         label: 'Day 2',
         name: 'Lanivet to Luxulyan',
         desc: "Cross the high ground of the Cornish interior \u2014 china clay country \u2014 passing Helman Tor with its ancient hillfort. Descend into the Luxulyan Valley, a magical landscape of giant granite boulders, iron-age field systems and a Victorian viaduct that is part of the Cornwall and West Devon Mining World Heritage Site.",
-        km: '~15 km',
+        km: '~11 km',
       },
       {
         label: 'Day 3',
         name: 'Luxulyan to Fowey',
-        desc: "South to St Austell and on to the Fowey estuary. The approach to Fowey is superb \u2014 descending through oak woodland to the water, with the town\u2019s pastel-coloured houses and the deep blue estuary opening up below. Cross by ferry to the town quay, where the journey ends.",
-        km: '~13 km',
+        desc: "South through farmland to Tywardreath, then over the high ground above St Austell Bay to Fowey. The approach is superb \u2014 descending to the water, with the town\u2019s pastel-coloured houses and the deep blue estuary opening up below. The journey ends at the church of St Fimbarrus by the harbour.",
+        km: '~14 km',
       },
     ],
     inclusions: {

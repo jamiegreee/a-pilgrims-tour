@@ -119,7 +119,7 @@ export default async function RoutePage({ params }: { params: Promise<{ slug: st
               <p className="text-sm font-medium uppercase tracking-widest text-parchment/70">Choose your arrangements</p>
               <h2 className="mt-3 font-display text-4xl text-parchment sm:text-5xl">Three ways to walk {route.name}</h2>
               <p className="mb-10 mt-5 max-w-2xl text-lg leading-relaxed text-parchment/80">Accommodation with breakfast and daily baggage transfers are included in Walk Light and Guided Pilgrimage. Independent pilgrims make their own arrangements.</p>
-              <PilgrimageOptions routeName={route.name} dark />
+              <PilgrimageOptions routeName={route.name} routeSlug={slug} dark />
             </div>
           </section>
           <section className="bg-forest px-6 py-16">

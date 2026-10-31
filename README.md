@@ -56,6 +56,11 @@ link was made out to. The owner (`BUSINESS_EMAIL`) can watch every flythrough. T
 emailed on every new sign-up and every completed checkout; the customer's confirmation email
 links to their flythrough.
 
+Prices and the Stripe payment links for each route are in `src/lib/pricing.ts`: the route pack
+is bought outright from the route page; Walk Light and Guided Pilgrimage show "from" prices,
+and their deposit links are sent with the proposal. Every link carries the route and option in
+its metadata.
+
 Environment:
 - `AUTH_SECRET`: at least 32 random characters (`openssl rand -hex 32`). Required.
 - `RESEND_API_KEY`: sends the sign-in links and emails. Without it, previews and local

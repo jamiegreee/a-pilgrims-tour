@@ -40,7 +40,7 @@ export default async function RoutePage({ params }: { params: Promise<{ slug: st
               href={`/routes/${slug}/flythrough`}
               className="mt-8 inline-flex items-center gap-2 rounded-md bg-parchment/90 px-5 py-3 text-sm font-medium text-slate-deep transition-colors hover:bg-parchment"
             >
-              Watch the 3D flythrough free <span aria-hidden>&rarr;</span>
+              Your 3D flythrough <span aria-hidden>&rarr;</span>
             </Link>
           )}
         </div>
@@ -99,17 +99,17 @@ export default async function RoutePage({ params }: { params: Promise<{ slug: st
             <section className="bg-card px-6 py-14">
               <div className="mx-auto grid max-w-5xl items-center gap-8 md:grid-cols-[1fr_auto]">
                 <div>
-                  <p className="text-sm font-medium uppercase tracking-widest text-forest">{plans.free.name} plan</p>
+                  <p className="text-sm font-medium uppercase tracking-widest text-forest">Included with your pilgrimage</p>
                   <h2 className="mt-2 font-display text-3xl text-slate-deep">{plans.free.tagline}</h2>
                   <p className="mt-3 max-w-2xl leading-relaxed text-stone">
-                    Sign up free to fly the whole of {route.name} in 3D over real terrain, stage by stage, with its landmarks and pilgrim stops.
+                    Every pilgrimage on {route.name} comes with its 3D flythrough: the whole way over real terrain, stage by stage, with its landmarks and pilgrim stops. Already booked? Sign in with the email you paid with.
                   </p>
                 </div>
                 <Link
-                  href={`/signup?next=${encodeURIComponent(`/routes/${slug}/flythrough`)}`}
+                  href={`/login?next=${encodeURIComponent(`/routes/${slug}/flythrough`)}`}
                   className="rounded-md bg-forest px-6 py-3 text-center text-sm font-medium text-white transition-colors hover:bg-forest/90"
                 >
-                  Sign up free <span aria-hidden="true">&rarr;</span>
+                  Sign in to watch <span aria-hidden="true">&rarr;</span>
                 </Link>
               </div>
             </section>

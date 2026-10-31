@@ -19,7 +19,7 @@ export default async function SignupPage({ searchParams }: { searchParams: Promi
     <div className="bg-parchment px-6 py-20 sm:py-28">
       <div className="mx-auto grid max-w-4xl gap-12 md:grid-cols-[1fr_380px]">
         <div>
-          <p className="text-sm font-medium uppercase tracking-widest text-forest">{plans.free.name} plan</p>
+          <p className="text-sm font-medium uppercase tracking-widest text-forest">Your account</p>
           <h1 className="mt-3 font-display text-4xl leading-tight text-slate-deep sm:text-5xl">
             {routeName ? `Fly ${routeName} before you walk it` : plans.free.tagline}
           </h1>
@@ -32,7 +32,7 @@ export default async function SignupPage({ searchParams }: { searchParams: Promi
             ))}
           </ul>
           <p className="mt-8 leading-relaxed text-stone">
-            Free, with no card needed. When you&rsquo;re ready to walk, upgrade to a route pack, Walk Light or a Guided Pilgrimage.
+            Creating an account is free. A route&rsquo;s flythrough unlocks when you book a pilgrimage on it: a route pack, Walk Light or a Guided Pilgrimage. Use the same email address you pay with.
           </p>
         </div>
         <AuthForm intent="signup" next={next} route={route && routes[route] ? route : undefined} />

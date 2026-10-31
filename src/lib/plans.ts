@@ -1,15 +1,16 @@
 /**
- * What each plan unlocks. Everyone who signs up starts on `free`; paid plans are the
- * pilgrimage options in pilgrimage-options.ts and are granted after payment.
+ * Everyone who signs up has a free account. What they can see beyond that comes from what
+ * they have bought (see purchases.ts): a route's flythrough comes with any pilgrimage option
+ * on that route, and stays in the flythrough are shown to the options listed on them.
  */
 export const plans = {
   free: {
     name: 'Free',
-    tagline: 'Walk it from the air first.',
+    tagline: 'Fly your route before you walk it.',
     inclusions: [
-      'The 3D flythrough of the route, stage by stage',
+      'The 3D flythrough of your route, stage by stage',
       'Landmarks and pilgrim stops along the way',
-      'An overview of each stage before you commit',
+      'Your overnight stops, once they are booked',
     ],
   },
   independent: { name: 'Independent Pilgrimage' },

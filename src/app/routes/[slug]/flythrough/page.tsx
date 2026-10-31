@@ -3,6 +3,8 @@ import type { Metadata } from 'next';
 import { routes } from '@/lib/routes';
 import { flythroughs, flythroughSlugs, staysFor } from '@/lib/flythroughs';
 import { getSession } from '@/lib/session';
+import { flythroughAccess } from '@/lib/purchases';
+import { FlythroughLocked } from '@/components/flythrough/flythrough-locked';
 import FlythroughScene from '@/components/flythrough/flythrough-loader';
 
 export const dynamicParams = false;
@@ -38,15 +40,18 @@ export default async function FlythroughPage({
     notFound();
   }
 
-  // Flythroughs come with the free plan, so a sign-up is all it takes.
+  // A flythrough comes with a pilgrimage on its route: sign in, then it is checked against
+  // what that email has paid for.
   const session = await getSession();
-  if (!session) redirect(`/signup?next=${encodeURIComponent(`/routes/${slug}/flythrough`)}`);
+  if (!session) redirect(`/login?next=${encodeURIComponent(`/routes/${slug}/flythrough`)}`);
+  const access = await flythroughAccess(session.email, slug);
+  if (!access.allowed) return <FlythroughLocked slug={slug} routeName={route.name} email={session.email} />;
 
   return (
     <FlythroughScene
       slug={slug}
       routeName={route.name}
-      flythrough={{ ...flythrough, stays: staysFor(flythrough, session.plan) }}
+      flythrough={{ ...flythrough, stays: access.owner ? flythrough.stays ?? [] : staysFor(flythrough, access.option ?? 'free') }}
       stages={route.stages}
       ctaLabel={route.cta.button}
     />

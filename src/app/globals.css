@@ -11,6 +11,17 @@
   --font-body: var(--font-inter);
 }
 
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 html {
   scroll-padding-top: 6rem;
 }

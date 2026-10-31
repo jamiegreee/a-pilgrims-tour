@@ -7,6 +7,7 @@ const navLinks = [
   { href: "/routes", label: "Routes" },
   { href: "/how-it-works", label: "How It Works" },
   { href: "/about", label: "About" },
+  { href: "/account", label: "Account" },
 ];
 
 export function Nav() {

@@ -1,8 +1,9 @@
 import type Stripe from 'stripe'
 import { getStripe } from '@/lib/stripe'
 import { getResend } from '@/lib/resend'
-
-const FROM_EMAIL = 'A Pilgrim\'s Tour <noreply@apilgrimstour.com>'
+import { FROM_EMAIL, escapeHtml, notifyOwner } from '@/lib/email'
+import { flythroughs } from '@/lib/flythroughs'
+import { routeSlugFor } from '@/lib/purchases'
 
 export async function POST(request: Request) {
   const body = await request.text()
@@ -47,6 +48,16 @@ export async function POST(request: Request) {
     const email = session.customer_details?.email
     const name = session.customer_details?.name ?? 'Pilgrim'
     const routeName = session.metadata?.routeName ?? 'your pilgrimage'
+    const routeSlug = routeSlugFor(session.metadata)
+    const flythroughLink = routeSlug && flythroughs[routeSlug] ? `${new URL(request.url).origin}/routes/${routeSlug}/flythrough` : null
+
+    await notifyOwner(`New purchase: ${routeName} — ${name}`, [
+      ['Name', name],
+      ['Email', email],
+      ['Route', routeName],
+      ['Amount', session.amount_total != null ? `${(session.amount_total / 100).toFixed(2)} ${session.currency?.toUpperCase() ?? ''}` : null],
+      ['Stripe session', session.id],
+    ])
 
     if (email) {
       try {
@@ -59,8 +70,9 @@ export async function POST(request: Request) {
             <h2>Payment Received</h2>
             <p>Thank you, ${escapeHtml(name)}. Your payment for <strong>${escapeHtml(routeName)}</strong> has been confirmed.</p>
             <p>We'll follow up shortly with your full itinerary and preparation guide.</p>
+            ${flythroughLink ? `<p>Your 3D flythrough of the route is ready: <a href="${escapeHtml(flythroughLink)}">watch it here</a>, signing in with this email address.</p>` : ''}
             <br/>
-            <p>Buen Camino,<br/>A Pilgrim's Tour</p>
+            <p>With best wishes,<br/>A Pilgrim's Tour</p>
           `,
         })
       } catch (err) {
@@ -70,12 +82,4 @@ export async function POST(request: Request) {
   }
 
   return new Response('OK', { status: 200 })
-}
-
-function escapeHtml(str: string): string {
-  return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
 }
